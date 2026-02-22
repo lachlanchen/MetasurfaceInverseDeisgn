@@ -12,37 +12,42 @@
   · <a href="README.ru.md">Русский</a>
 </p>
 
-
 # Inverse Design of Metasurface for Spectral Imaging
 
 <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b?style=for-the-badge">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB?style=for-the-badge&logo=python&logoColor=white">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white">
-  <img alt="Simulator" src="https://img.shields.io/badge/RCWA-S4-16a34a?style=for-the-badge">
-  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%2FBash-6b7280?style=for-the-badge&logo=gnu-bash&logoColor=white">
+  <img alt="RCWA" src="https://img.shields.io/badge/Simulator-S4%20RCWA-16a34a?style=for-the-badge">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%20%2B%20Bash-6b7280?style=for-the-badge&logo=gnu-bash&logoColor=white">
 </p>
 
-スペクトルイメージング向けメタサーフェス逆設計のための、スクリプト中心の研究用リポジトリ（過去には `inverse_metasurface` として参照）。このパイプラインは、**S4 ベースの RCWA シミュレーション**と、形状と光透過スペクトルの順問題・逆問題を扱う**3 段階の PyTorch ワークフロー**を組み合わせています。
+スペクトルイメージング向けメタサーフェス逆設計のための、スクリプト中心の研究用リポジトリ（旧称 `inverse_metasurface`）です。中核ワークフローは次を統合しています。
+
+- 物理に基づくRCWAシミュレーション（S4 + Lua）
+- データ統合と形状情報の付与
+- 3段階のPyTorch学習（`shape -> spectrum`、`spectrum -> shape`、連結ファインチューニング）
+- 定量・定性評価（必要に応じてニューラル推定とS4再計算の整合性チェック）
 
 ## ✨ 概要
 
-| 項目 | 詳細 |
+| 項目 | 内容 |
 |---|---|
-| 🎯 目的 | 目標透過スペクトルから C4 対称メタサーフェス形状を予測 |
-| 🔬 物理 | S4 (`../build/S4`) による RCWA シミュレーション |
+| 🎯 主タスク | 目標透過スペクトルから C4 対称メタサーフェス形状を推定 |
+| 🔬 シミュレータ | シェルランチャーと `.lua` スクリプトから呼び出される `../build/S4` |
 | 🧠 学習パイプライン | Stage A `shape -> spectra`、Stage B `spectra -> shape`、Stage C `spectra -> shape -> spectra` |
-| 📦 データ形式 | 統合 CSV（`T@...`、形状メタデータ） -> 圧縮 NPZ（`uids`、`spectra`、`shapes`） |
-| 🧪 評価 | MSE 指標、定性プロット、任意で S4 再シミュレーション照合 |
+| 📦 データ契約 | 統合CSV（`T@...`、メタデータ、`vertices_str`） -> 圧縮NPZ（`uids`、`spectra`、`shapes`） |
+| 🧪 評価 | MSE指標、各ステージ可視化、任意のS4再シミュレーション |
 
-## 🧭 エンドツーエンドのワークフロー
+## 🧭 エンドツーエンドの流れ
 
-1. S4（`.lua` + シェルランチャー）でメタサーフェスの光学応答を生成。
-2. 生シミュレーション CSV を統合し、多角形頂点情報を付与。
-3. 統合 CSV を学習用 NPZ に変換。
-4. 3 段階透過パイプラインを学習。
-5. チェックポイントを評価し、Stage A/B/C の挙動を可視化。
-6. 必要に応じて、ニューラル予測と新規 S4 シミュレーションを比較。
+1. `results/` にシミュレーション出力、`shapes/` にポリゴンファイルを生成する。
+2. S4 CSVを統合し、形状頂点情報を付与する。
+3. 学習互換性のために統合列名を正規化する。
+4. 統合CSVをNPZテンソルへ前処理する。
+5. Stage A/B/Cモデルを学習する。
+6. チェックポイントを評価し、挙動を可視化する。
+7. 必要に応じて、予測形状スペクトルと新規S4実行結果を比較する。
 
 ## 🧱 リポジトリ構成
 
@@ -50,64 +55,94 @@
 .
 ├── README.md
 ├── how_to_run.md
+├── commands.md
 ├── iccp.yaml
 ├── pip_requirements.txt
 │
 ├── ms.sh
 ├── ms_final.sh
+├── ms_resume.sh
 ├── ms_resume_allargs.sh
+├── ms_resume_random_state.sh
+│
 ├── metasurface_seed.lua
 ├── metasurface_final.lua
+├── metasurface_seed_resume.lua
 ├── metasurface_allargs_resume.lua
+├── metasurface_resume_random_state.lua
+├── metasurface_fixed_shape_and_c_value.lua
 │
 ├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
 ├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
 │
-├── results/                # S4 raw CSV outputs
-├── shapes/                 # polygon vertex files used during merge
-├── merged_csvs/            # merged CSV datasets
-├── outputs_three_stage_*/  # training checkpoints and curves
-├── partial_crys_data/      # crystallization-state optical tables
+├── partial_crys_data/
+├── results/
+├── shapes/
+├── merged_csvs/
+├── outputs_three_stage_*/
 │
-├── AVIRIS*/                # secondary hyperspectral experiments
-├── noise_experiment_*/     # robustness/noise branches
-└── archived/               # historical scripts and snapshots
+├── AVIRIS*/
+├── noise_experiment*/
+└── archived/
 ```
 
 ## 🛠️ 前提条件
 
-- Linux + Bash
-- Conda（推奨）
-- Python 3.9
-- `../build/S4` に配置された S4 バイナリ
-- 任意: 学習高速化のための CUDA 対応 GPU
+| 依存要件 | 備考 |
+|---|---|
+| Linux + Bash | ランチャースクリプトはシェル実行を前提 |
+| Python 3.9 | `iccp.yaml` と整合 |
+| Conda | 再現性確保のため推奨 |
+| S4バイナリ | `../build/S4` に配置されている想定 |
+| CUDA GPU（任意） | 学習・評価を高速化 |
 
 ## 🚀 セットアップ
+
+### 1) クローンして移動
 
 ```bash
 git clone <your-repo-url> inverse_metasurface
 cd inverse_metasurface
+```
 
+### 2) 環境作成（推奨）
+
+```bash
 conda env create -f iccp.yaml
 conda activate iccp
+```
 
-# Verify simulator path expected by scripts
+代替手順（再現性はやや低下）:
+
+```bash
+pip install -r pip_requirements.txt
+```
+
+### 3) スクリプトが期待するシミュレータパスを確認
+
+```bash
 ls -l ../build/S4
 ```
 
-任意:
+### 4) （任意）ランチャーに実行権限を付与
 
 ```bash
-chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
+chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_state.sh
 ```
 
-## ▶️ 実運用での使い方
+## ▶️ 実践的な使い方
 
-### 1) RCWA データを生成
+### A) RCWAシミュレーションデータを生成
 
-`ms_final.sh` と `ms_resume_allargs.sh` は、それぞれ 4 並列の S4 ジョブ（`NQ=1..4`）を起動します。
+シンプルなランチャー:
+
+```bash
+./ms.sh -ns 10000 -r 12345
+```
+
+パラメータ指定ランチャー:
 
 ```bash
 ./ms_final.sh \
@@ -119,26 +154,38 @@ chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
   -ro 0.30
 ```
 
-補足:
-- `ms.sh` はよりシンプルなランチャーパスです。
-- ランチャーは `../build/S4` を前提とし、`-t 32` を使用します。
+再開用途ランチャー:
 
-### 2) S4 出力 + 形状頂点を統合
+```bash
+./ms_resume_allargs.sh \
+  -ns 10000 \
+  -r 12345 \
+  -p myrun \
+  -g 80 \
+  -bo 0.35 \
+  -ro 0.30
+```
+
+補足:
+- ランチャーは `NQ=1..4` を並列実行します。
+- スクリプトは `-t 32` 付きで `../build/S4` を呼び出します。
+
+### B) S4出力を統合し、形状頂点を付与
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
 # output: merged_s4_shapes_myrun.csv
 ```
 
-### 3) 学習互換のため列名を正規化
+### C) 学習互換のため列名を正規化
 
-`merge_s4_data_full.py` は `folder_key` / `NQ` を出力しますが、`three_stage_transmittance.py` は `prefix` / `nQ` を期待します。
+`merge_s4_data_full.py` は `folder_key` と `NQ` を出力しますが、学習系では `prefix` と `nQ` が期待されます。
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
 ```
 
-### 4) CSV を NPZ に前処理
+### D) CSV -> NPZ 前処理
 
 ```bash
 mkdir -p merged_csvs
@@ -150,7 +197,7 @@ python three_stage_transmittance.py \
   --output_npz preprocessed_t_data.npz
 ```
 
-### 5) 3 段階パイプラインを学習
+### E) Stage A/B/C を学習
 
 ```bash
 python three_stage_transmittance.py \
@@ -159,12 +206,12 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-想定される出力パターン:
+出力先:
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
 
-### 6) Stage A/B/C モデルを評価
+### F) 学習済みモデルを評価
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -173,7 +220,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-### 7) 任意: ニューラル予測と S4 の整合性チェック
+### G) （任意）ニューラル推定とS4の整合性チェック
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -183,81 +230,109 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## ⚙️ 主な CLI オプション
+## ⚙️ 主要CLIオプション
 
-### S4 ランチャー（`ms_final.sh`, `ms_resume_allargs.sh`）
+### S4ランチャー（`ms_final.sh`, `ms_resume_allargs.sh`）
 
-| フラグ | 意味 | デフォルト |
+| Flag | 意味 | Default |
 |---|---|---|
 | `-ns`, `--numshapes` | 生成する形状数 | `100000` |
 | `-r`, `--seed` | 乱数シード | `88888` |
-| `-p`, `--prefix` | プレフィックス/再開キー | `""` |
-| `-g`, `--numg` | 基底/形状パラメータ | `80` |
-| `-bo`, `--baseouter` | 外側境界オフセットの基準値 | `0.25` |
-| `-ro`, `--randouter` | 外側オフセットのランダム成分 | `0.20` |
+| `-p`, `--prefix` | 接頭辞/再開キー | `""` |
+| `-g`, `--numg` | 基底/グリッドパラメータ | `80` |
+| `-bo`, `--baseouter` | 外周境界の基準オフセット | `0.25` |
+| `-ro`, `--randouter` | 外周境界のランダムオフセット | `0.20` |
 
 ### 学習（`three_stage_transmittance.py`）
 
-| フラグ | 目的 | デフォルト |
+| Flag | 意味 | Default |
 |---|---|---|
 | `--preprocess` | 前処理モードを実行 | `False` |
-| `--input_folder` | 統合 CSV があるフォルダ | `""` |
-| `--output_npz` | 出力 NPZ パス | `preprocessed_data.npz` |
-| `--data_npz` | 学習に使う NPZ | `""` |
-| `--csv_file` | NPZ を使わない場合の CSV フォールバック | `""` |
-| `--test` | テストモード（学習をスキップ） | `False` |
-| `--num_epochs` | エポック数 | `10` |
+| `--input_folder` | 統合CSVがあるフォルダ | `""` |
+| `--output_npz` | 出力NPZパス | `preprocessed_data.npz` |
+| `--data_npz` | 学習用NPZデータセット | `""` |
+| `--csv_file` | NPZ未使用時のCSV代替入力 | `""` |
+| `--test` | テストモード | `False` |
+| `--num_epochs` | 学習エポック数 | `10` |
 | `--batch_size` | バッチサイズ | `4096` |
 
 ### 評価（`three_stage_transmittance_evaluation.py`）
 
-| フラグ | 目的 | デフォルト |
+| Flag | 意味 | Default |
 |---|---|---|
-| `--model_dir` | `stageA/B/C` を含むルートディレクトリ | 必須 |
-| `--data_npz` | 評価用 NPZ 入力 | `""` |
-| `--csv_file` | 評価用 CSV 入力 | `""` |
-| `--output_dir` | 出力ディレクトリ上書き | `model_dir` 配下で自動 |
+| `--model_dir` | `stageA/B/C` を含むディレクトリ | required |
+| `--data_npz` | NPZ入力 | `""` |
+| `--csv_file` | CSV代替入力 | `""` |
+| `--output_dir` | 出力先の上書き指定 | `model_dir` 配下に自動生成 |
 | `--sample_count` | 可視化サンプル数 | `4` |
-| `--seed` | サンプリング用乱数シード | `23` |
-| `--font_scale` | プロットのフォント倍率 | `1.0` |
-| `--batch_size` | 評価バッチサイズ | `32` |
-| `--plot_only` | 曲線プロットのみ実行 | `False` |
-
-### S4 整合性評価（`FilterShapeS4_Evaluator_Transmittance.py`）
-
-| フラグ | 目的 | デフォルト |
-|---|---|---|
-| `--npz_file` | 前処理済み NPZ ファイル | `preprocessed_t_data.npz` |
-| `--spec2shape_ckpt` | Stage C チェックポイント | `outputs_three_stage_20250322_145925/stageC/spec2shape_stageC.pt` |
-| `--shape2spec_ckpt` | Stage A チェックポイント | `outputs_three_stage_20250322_145925/stageA/shape2spec_stageA.pt` |
-| `--n_samples` | 確認サンプル数 | `4` |
 | `--seed` | 乱数シード | `23` |
-| `--max_workers` | 並列 S4 ワーカー数 | `4` |
-| `--out_folder` | 出力フォルダ | タイムスタンプで自動生成 |
+| `--font_scale` | プロットのフォント倍率 | `1.0` |
+| `--batch_size` | 評価時バッチサイズ | `32` |
+| `--plot_only` | 学習曲線の描画のみ実行 | `False` |
 
-## 🧪 クイックスモーク実行
+### S4整合性評価（`FilterShapeS4_Evaluator_Transmittance.py`）
+
+| Flag | 意味 | Default |
+|---|---|---|
+| `--npz_file` | 入力NPZファイル | `preprocessed_t_data.npz` |
+| `--spec2shape_ckpt` | Stage Cチェックポイントパス | `outputs_three_stage_20250322_145925/stageC/spec2shape_stageC.pt` |
+| `--shape2spec_ckpt` | Stage Aチェックポイントパス | `outputs_three_stage_20250322_145925/stageA/shape2spec_stageA.pt` |
+| `--n_samples` | 評価サンプル数 | `4` |
+| `--seed` | 乱数シード | `23` |
+| `--max_workers` | S4ワーカースレッド数 | `4` |
+| `--out_folder` | 出力ディレクトリ | タイムスタンプで自動生成 |
+
+## 🧪 スモーク実行
 
 ```bash
 ./ms_final.sh -ns 1000 -r 42 -p smoke -g 40 -bo 0.25 -ro 0.20
 python merge_s4_data_full.py --prefix smoke
 python -c "import pandas as pd; p='merged_s4_shapes_smoke.csv'; d=pd.read_csv(p).rename(columns={'folder_key':'prefix','NQ':'nQ'}); d.to_csv(p,index=False)"
-python three_stage_transmittance.py --preprocess --input_folder . --output_npz smoke.npz
+mkdir -p merged_csvs && mv merged_s4_shapes_smoke.csv merged_csvs/
+python three_stage_transmittance.py --preprocess --input_folder merged_csvs --output_npz smoke.npz
 python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_size 128
 ```
 
 ## 🔬 研究コンテキスト
 
-中核となる逆設計設定では、結晶化状態にまたがる透過スペクトルから C4 対称メタサーフェス形状を推定します。現在の透過パイプラインは次を前提としています。
+現在の逆設計設定では、結晶化状態にわたる透過率から C4 対称形状を復元する学習を行います。透過率パイプラインは現在、次を前提としています。
 
-- サンプルごとに 11 の結晶化状態（前処理時に `c` 値をソート）
-- 状態ごとに 100 波長ビン（`T@...` 列）
-- 最大 4 つの Q1 頂点を `(presence, x, y)` で符号化
+- 形状サンプルごとに結晶化行が11行（`shape_uid` 単位でグループ化）
+- 結晶化状態ごとに100波長ビン（`T@...` 列）
+- 最大4つのQ1制御点を `4x3` テンソルとして符号化: `(presence, x, y)`
+- 形状可視化および整合性検証のため、C4対称性を仮定したポリゴン再構成
 
-本リポジトリには、標準の透過パイプライン以外にも、探索的な分岐（例: `AVIRIS*`、`noise_experiment_*`、`archived/`）が含まれます。
+このリポジトリには、主たる透過率学習パス以外に探索的ブランチ（`AVIRIS*`, `noise_experiment*`, `archived/`）も含まれます。
 
-## 📚 引用
+## 🧯 トラブルシューティング
 
-このリポジトリを利用または本研究を発展させる場合は、以下を引用してください。
+| 症状 | 想定原因 | 対処 |
+|---|---|---|
+| `../build/S4: No such file or directory` | 期待相対パスにS4バイナリがない | `../build/S4` にS4をビルド/リンクするか、ランチャーパスを更新 |
+| `No transmission columns found` | CSVに `T@...` 列がない | マージ出力形式を再確認 |
+| `Must specify either --data_npz or --csv_file` | 学習/評価データ引数の不足 | どちらかの入力を明示指定 |
+| `No valid shapes => SHIFT->Q1->UpTo4` | `vertices_str` が不正/空、またはQ1フィルタですべて除外 | 形状ファイルとマージ出力を検証 |
+| `--prefix` 指定でマージ結果が空 | `results/` 内ファイルと接頭辞が不一致 | 正確なファイル接頭辞を確認して再実行 |
+| 評価チェックポイントが見つからない | `stageA/B/C` のチェックポイント不足 | `--model_dir` が完全な出力フォルダか確認 |
+
+## 🤝 コントリビューション
+
+再現性、テスト、ドキュメント品質の向上につながる貢献を歓迎します。
+
+推奨手順:
+
+1. スコープと期待動作をIssueで共有する。
+2. 焦点を絞ったブランチを作成する。
+3. 実行可能コマンドと出力を添えてPull Requestを提出する。
+4. 可能な限り1つのワークフローに変更範囲を限定する。
+
+## 📄 ライセンス
+
+このスナップショットでは、リポジトリルートに `LICENSE` ファイルはありません。利用・再配布条件を明確にするため追加してください。
+
+## 📚 Citation
+
+このリポジトリを利用した場合、または本研究を基にした場合は、以下を引用してください。
 
 ```bibtex
 @article{chen2025inverse,
