@@ -14,104 +14,78 @@
 </p>
 
 
-# inverse_metasurface ✨
+# Inverse Design of Metasurface for Spectral Imaging
 
-[![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)](#-專案範圍)
-[![Python](https://img.shields.io/badge/Python-3.9-3776AB?logo=python&logoColor=white)](#-環境設定)
-[![Platform](https://img.shields.io/badge/Platform-Linux-2f2f2f?logo=linux&logoColor=white)](#-先決條件)
-[![RCWA](https://img.shields.io/badge/RCWA-S4%20Required-1f9d55)](#-先決條件)
-[![PyTorch](https://img.shields.io/badge/Framework-PyTorch-EE4C2C?logo=pytorch&logoColor=white)](#-訓練與評估)
-[![License](https://img.shields.io/badge/License-Not%20Specified-lightgrey)](#-授權)
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB">
+  <img alt="Framework" src="https://img.shields.io/badge/Framework-PyTorch-EE4C2C">
+  <img alt="Simulator" src="https://img.shields.io/badge/RCWA-S4-16a34a">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%2FBash-6b7280">
+</p>
 
-這是一個以腳本為主的研究型程式碼庫，聚焦於 **C4 對稱條件下的反向超表面設計**。
-它整合了：
+這是一個以腳本為核心的研究型儲存庫（歷史上也稱為 `inverse_metasurface`），聚焦於**用於光譜成像的 C4 對稱超表面反向設計**，涵蓋：
 
-- 🔬 S4/RCWA 模擬（`.lua` + Bash 啟動腳本）
-- 🧱 由原始光譜與形狀頂點進行資料合併與前處理
-- 🧠 三階段 PyTorch 訓練（`shape -> spectra`、`spectra -> shape`、鏈式微調）
-- 📊 評估與繪圖，包含神經網路與 S4 一致性檢查
+- 使用 S4 進行 RCWA 資料生成（`.lua` + shell 啟動腳本）
+- 資料合併與前處理（`.csv` -> `.npz`）
+- 三階段神經網路訓練（shape->spectra、spectra->shape、chain fine-tuning）
+- 評估與可選的 neural-vs-S4 比對
 
-## 📌 目錄
+## ✨ 快速總覽
 
-- [專案範圍](#-專案範圍)
-- [研究背景](#-研究背景)
-- [儲存庫結構](#-儲存庫結構)
-- [先決條件](#-先決條件)
-- [環境設定](#-環境設定)
-- [快速開始](#-快速開始)
-- [端到端流程](#-端到端流程)
-- [訓練與評估](#-訓練與評估)
-- [重要 CLI 選項](#-重要-cli-選項)
-- [疑難排解](#-疑難排解)
-- [路線圖](#-路線圖)
-- [引用](#-引用)
-- [授權](#-授權)
-
-## 🎯 專案範圍
-
-此儲存庫偏重實驗，核心是可直接執行的腳本（不是封裝後的函式庫）。
-目前最穩定的工作流程是：
-
-1. 執行 S4，於 `results/` 產生原始光學輸出，並於 `shapes/` 產生形狀資料
-2. 將每次執行的 CSV 檔案合併與 pivot 成可訓練表格資料
-3. 將合併後 CSV 轉成壓縮 `.npz`
-4. 訓練三階段透射率管線
-5. 評估 checkpoint 並匯出圖表/指標
-
-## 🧪 研究背景
-
-### 問題設定
-
-核心反向設計任務是在 C4 對稱限制與部分結晶掃描條件下，根據目標透射光譜回推超表面幾何（反之亦然）。
-
-### 透射率管線中的資料假設
-
-| 項目 | 值 |
+| 項目 | 說明 |
 |---|---|
-| 每個形狀的結晶狀態數 | 11（`c` 從 `0.0` 到 `1.0`） |
-| 每個狀態的光譜 bins | 100 |
-| 每筆樣本的光譜張量 | `11 x 100` |
-| 每筆樣本的形狀張量 | `4 x 3`（`[presence, x, y]`） |
+| 核心目標 | 由目標透射光譜預測幾何形狀 |
+| 核心資料形狀 | spectra: `11 x 100`, shape: `4 x 3` |
+| 主要訓練腳本 | `three_stage_transmittance.py` |
+| 主要評估腳本 | `three_stage_transmittance_evaluation.py` |
+| RCWA 啟動腳本 | `ms_final.sh`, `ms_resume_allargs.sh` |
+| 合併腳本 | `merge_s4_data_full.py` |
 
-### 三階段學習目標
+## 🧠 研究背景
 
-| 階段 | 方向 | 常見 checkpoint |
-|---|---|---|
-| A | `shape -> spectrum` | `stageA/shape2spec_stageA.pt` |
-| B | `spectrum -> shape` | `stageB/spec2shape_stageB.pt` |
-| C | `spectrum -> shape -> spectrum`（鏈式微調） | `stageC/spec2shape_stageC.pt` |
+本專案著重於光譜成像之超表面反向設計。訓練流程使用 S4 生成的多結晶化狀態透射光譜，同時學習正向與反向映射：
 
-## 🗂️ 儲存庫結構
+1. **Stage A**: shape -> spectra
+2. **Stage B**: spectra -> shape
+3. **Stage C**: spectra -> shape -> spectra（以 chain loss 微調）
+
+目前前處理／訓練程式碼假設：
+
+- 11 個結晶化狀態（`c = 0.0 ... 1.0`）
+- 每個狀態 100 個波長 bins
+- 形狀表示為最多 4 個 Q1 點，每點為 `[presence, x, y]`
+
+## 🗂️ 儲存庫結構（核心路徑）
 
 ```text
 .
 ├── ms.sh / ms_final.sh / ms_resume_allargs.sh
-├── metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
-├── merge.py / merge_s4_data_full.py / merge_s4_data_local.py / merge_robust.py
+├── metasurface_final.lua / metasurface_allargs_resume.lua / metasurface_seed.lua
+├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
 ├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
+├── results/                # raw S4 output CSVs
+├── shapes/                 # generated polygon vertices
+├── merged_csvs/            # merged CSVs used for preprocessing
+├── outputs_three_stage_*/  # checkpoints, losses, visualizations
 ├── partial_crys_data/
-├── results/                          # 原始 S4 輸出
-├── shapes/                           # 產生的多邊形頂點
-├── outputs_three_stage_*/            # checkpoints + 訓練產物
-├── AVIRIS*/ and aviris_*.py          # 相關高光譜實驗
-├── commands.md / how_to_run.md
-├── iccp.yaml
-└── pip_requirements.txt
+└── iccp.yaml
 ```
 
-## 🧩 先決條件
+## ⚙️ 先決條件
 
-| 相依項目 | 說明 |
+| 依賴項 | 需求 |
 |---|---|
-| Linux + Bash | Shell 腳本預設使用 Linux 風格路徑 |
-| Conda | 建議的環境管理方式（`iccp.yaml`） |
-| Python 3.9 | 訓練/評估腳本主要執行環境 |
-| S4 binary | 預期位於儲存庫根目錄相對路徑 `../build/S4` |
-| CUDA（可選） | 可加速訓練與評估 |
+| OS | Linux |
+| Shell | Bash |
+| Python | 3.9 |
+| 環境管理 | Conda（建議） |
+| RCWA 二進位檔 | `../build/S4`（相對於 repo root） |
+| GPU | 可選，建議使用以加速訓練 |
 
-## ⚙️ 環境設定
+## 🚀 安裝設定
 
 ```bash
 git clone <repo-url> inverse_metasurface
@@ -120,35 +94,19 @@ cd inverse_metasurface
 conda env create -f iccp.yaml
 conda activate iccp
 
-# verify S4 path expected by shell runners
+# Required by launcher scripts
 ls -l ../build/S4
 ```
 
-可選：為 shell 啟動腳本加上可執行權限：
+可選：
 
 ```bash
-chmod +x ms.sh ms_final.sh ms_resume_allargs.sh ms_resume.sh
+chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
 ```
 
-## 🚀 快速開始
+## 🧪 端到端使用流程
 
-如果你已經有 `preprocessed_t_data.npz`：
-
-```bash
-python three_stage_transmittance.py \
-  --data_npz preprocessed_t_data.npz \
-  --num_epochs 100 \
-  --batch_size 1024
-
-python three_stage_transmittance_evaluation.py \
-  --model_dir outputs_three_stage_YYYYMMDD_HHMMSS \
-  --data_npz preprocessed_t_data.npz \
-  --sample_count 8
-```
-
-## 🔁 端到端流程
-
-### 1) 產生 S4 資料
+### 1) 使用 S4 生成 RCWA 資料
 
 ```bash
 ./ms_final.sh \
@@ -160,33 +118,40 @@ python three_stage_transmittance_evaluation.py \
   -ro 0.30
 ```
 
-### 2) 合併 S4 輸出與形狀頂點
+說明：
+
+- 啟動腳本會以 `-t 32` 呼叫 `../build/S4`，並平行執行 `NQ=1..4`。
+- `ms_final.sh` 使用 `metasurface_final.lua`。
+- `ms_resume_allargs.sh` 使用 `metasurface_allargs_resume.lua`。
+
+### 2) 合併 RCWA 輸出與形狀頂點
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
 # -> merged_s4_shapes_myrun.csv
 ```
 
-### 3) 正規化 CSV 欄位名稱以供前處理
+### 3) 將合併欄位名稱正規化以供訓練（如有需要）
 
-`three_stage_transmittance.py` 的前處理預期欄位為 `prefix` 與 `nQ`，而合併輸出可能是 `folder_key` 與 `NQ`。
+`merge_s4_data_full.py` 會輸出 `folder_key` / `NQ`，但訓練流程預期欄位為 `prefix` / `nQ`。
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
 ```
 
-### 4) CSV -> NPZ 前處理
+### 4) 前處理 CSV -> NPZ
 
 ```bash
 mkdir -p merged_csvs
 mv merged_s4_shapes_myrun.csv merged_csvs/
 
-python three_stage_transmittance.py --preprocess \
+python three_stage_transmittance.py \
+  --preprocess \
   --input_folder merged_csvs \
   --output_npz preprocessed_t_data.npz
 ```
 
-### 5) 訓練三個階段
+### 5) 訓練三階段模型
 
 ```bash
 python three_stage_transmittance.py \
@@ -195,7 +160,13 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-### 6) 評估並繪圖
+主要輸出結構：
+
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
+
+### 6) 評估 checkpoints
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -204,7 +175,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-### 7) 可選：神經網路與 S4 比較
+### 7) 可選：比較神經網路預測與 S4
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -214,86 +185,80 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## 🧠 訓練與評估
+## 🎛️ CLI 參考
 
-### 主要腳本
+### S4 啟動參數（`ms_final.sh`, `ms_resume_allargs.sh`）
 
-| 腳本 | 用途 |
-|---|---|
-| `three_stage_transmittance.py` | 前處理 + 訓練 A/B/C 三階段 |
-| `three_stage_transmittance_evaluation.py` | 評估 checkpoints、計算指標、儲存圖表 |
-| `FilterShapeS4_Evaluator_Transmittance.py` | 比較學習模型預測與 S4 行為 |
-
-### 常見輸出
-
-| 產物 | 位置 |
-|---|---|
-| 各階段 checkpoints | `outputs_three_stage_*/stageA|stageB|stageC/` |
-| 評估圖表 | `outputs_three_stage_*/evaluation_<timestamp>/` |
-| 指標 CSV | `evaluation_metrics.csv`, `metrics_summary.csv` |
-
-## 🛠️ 重要 CLI 選項
-
-### S4 啟動腳本（`ms_final.sh`, `ms_resume_allargs.sh`）
-
-| 旗標 | 含義 | 預設值 |
+| 旗標 | 意義 | 預設值 |
 |---|---|---|
 | `-ns`, `--numshapes` | 形狀數量 | `100000` |
 | `-r`, `--seed` | 隨機種子 | `88888` |
-| `-p`, `--prefix` | 執行前綴/續跑 key | 空 |
-| `-g`, `--numg` | 幾何基底設定 | `80` |
-| `-bo`, `--baseouter` | 基礎外偏移 | `0.25` |
-| `-ro`, `--randouter` | 隨機外偏移 | `0.20` |
+| `-p`, `--prefix` | 執行前綴／續跑鍵值 | `""` |
+| `-g`, `--numg` | 幾何基底參數 | `80` |
+| `-bo`, `--baseouter` | 外層基準偏移 | `0.25` |
+| `-ro`, `--randouter` | 外層隨機偏移 | `0.20` |
 
-### 訓練（`three_stage_transmittance.py`）
+### 訓練參數（`three_stage_transmittance.py`）
 
-| 旗標 | 含義 | 預設值 |
-|---|---|---|
-| `--preprocess` | 切換到前處理模式 | off |
-| `--input_folder` | 放置合併 CSV 的資料夾 | `""` |
-| `--output_npz` | 前處理輸出檔案 | `preprocessed_data.npz` |
-| `--data_npz` | 訓練用 NPZ 輸入 | `""` |
-| `--csv_file` | 直接以 CSV 訓練輸入 | `""` |
-| `--test` | 測試模式切換 | off |
-| `--num_epochs` | 每階段 epoch 數 | `10` |
-| `--batch_size` | batch size | `4096` |
+| 旗標 | 用途 |
+|---|---|
+| `--preprocess` | 執行前處理模式 |
+| `--input_folder` | 合併 CSV 檔資料夾 |
+| `--output_npz` | 輸出前處理 NPZ 檔名 |
+| `--data_npz` | 訓練用 NPZ 資料集 |
+| `--csv_file` | CSV 資料集替代來源 |
+| `--test` | 測試模式 |
+| `--num_epochs` | 訓練回合數 |
+| `--batch_size` | Batch 大小 |
 
-### 評估（`three_stage_transmittance_evaluation.py`）
+### 評估參數（`three_stage_transmittance_evaluation.py`）
 
-| 旗標 | 含義 | 預設值 |
-|---|---|---|
-| `--model_dir` | 訓練執行目錄（必填） | - |
-| `--data_npz` | 評估用 NPZ 輸入 | `""` |
-| `--csv_file` | 評估用 CSV 輸入 | `""` |
-| `--output_dir` | 自訂輸出目錄 | auto |
-| `--sample_count` | 視覺化樣本數 | `4` |
-| `--seed` | 樣本選取隨機種子 | `23` |
-| `--font_scale` | 圖表字體倍率 | `1.0` |
-| `--batch_size` | eval dataloader batch size | `32` |
-| `--plot_only` | 僅重新產生圖表 | off |
+| 旗標 | 用途 |
+|---|---|
+| `--model_dir` | checkpoint 根目錄（必填） |
+| `--data_npz` / `--csv_file` | 評估資料來源 |
+| `--output_dir` | 評估輸出資料夾 |
+| `--sample_count` | 視覺化樣本數 |
+| `--seed` | 樣本選擇的隨機種子 |
+| `--font_scale` | 圖表字體縮放 |
+| `--batch_size` | 評估 batch 大小 |
+| `--plot_only` | 只重新生成訓練曲線圖 |
 
-## 🧯 疑難排解
+## 🧾 資料契約（前處理用）
 
-| 症狀 | 可能原因 | 修正方式 |
-|---|---|---|
-| `../build/S4: No such file or directory` | S4 binary 不在預期相對路徑 | 將 S4 放置/建置於 `../build/S4`，或修改腳本 |
-| `Must specify either --data_npz or --csv_file` | 缺少訓練/評估資料集參數 | 精確提供其中一個資料輸入 |
-| `No transmission columns found` | 合併後 CSV 缺少 `T@...` 欄位 | 重新執行 merge/pivot 並確認欄位名稱 |
-| `KeyError: 'prefix'` in preprocess | 合併輸出仍使用 `folder_key`/`NQ` | 前處理前先將欄位改為 `prefix`/`nQ` |
-| GPU OOM | batch 過大 | 降低 `--batch_size` |
-| Missing checkpoints during eval | 缺少階段 checkpoint 或路徑錯誤 | 確認選定 `--model_dir` 下有 stageA/B/C 檔案 |
+`three_stage_transmittance.py` 的前處理流程預期合併 CSV 包含：
 
-## 🧭 路線圖
+- ID 欄位：`prefix`, `nQ`, `nS`, `shape_idx`, `c`
+- 幾何文字：`vertices_str`
+- 光譜欄位：`T@...`
 
-- 在各 merge 腳本間統一合併 CSV schema（`prefix`、`nQ` 命名）
-- 為 merge/preprocess/checkpoint 載入新增自動化測試
-- 提供單一 CLI 入口以編排完整流程
-- 新增資料集/執行 manifest 以提升可重現性
-- 補上明確的開源授權條款
+程式碼會執行的品質檢查：
+
+- 以 `shape_uid = prefix_nQ_nS_shape_idx` 分組
+- 每個分組必須剛好有 11 列
+- 僅保留 Q1 點數在 `[1, 4]` 的形狀
+
+## 🛠️ 疑難排解
+
+- `../build/S4: No such file or directory`
+  - 在 `../build/S4` 建置／連結 S4，或將啟動腳本改為你的實際 S4 路徑。
+- `No matching CSVs found in 'results/'`
+  - 檢查 `--prefix` 與 `results/*_output_nQ*_nS*.csv` 的輸出命名。
+- `No transmission columns found`
+  - 確認合併 CSV 含有 `T@...` 欄位。
+- 前處理結果為零筆
+  - 檢查必要欄位，並確認每個 shape UID 皆有 11 列結晶化資料。
+- 訓練時 GPU OOM
+  - 調小 `--batch_size`（例如 `256` 或 `128`）。
+- 評估找不到 checkpoints
+  - 確認 `--model_dir` 底下存在：
+    - `stageA/shape2spec_stageA.pt`
+    - `stageB/spec2shape_stageB.pt`
+    - `stageC/spec2shape_stageC.pt`
 
 ## 📚 引用
 
-若本儲存庫對你的研究有所幫助，請引用：
+如果此儲存庫對你的研究有幫助，請引用：
 
 ```bibtex
 @article{chen2025inverse,
@@ -304,6 +269,20 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 }
 ```
 
-## 📄 授權
+## 🌐 語言版本
 
-此儲存庫目前沒有 `LICENSE` 檔案。在新增授權之前，使用與再散布權利皆屬未明確定義狀態。
+此儲存庫另提供多種 README 版本，包括：
+
+- `README.en.md`, `README.de.md`, `README.es.md`, `README.fr.md`
+- `README.ru.md`, `README.ja.md`, `README.ko.md`, `README.vi.md`
+- `README.ar.md`, `README.zh-CN.md`, `README.zh-TW.md`
+
+## 📌 備註
+
+- 這是研究工作區，包含許多封存與探索性腳本。
+- 主要透射率流程聚焦於：
+  - `ms_final.sh` / `ms_resume_allargs.sh`
+  - `merge_s4_data_full.py`
+  - `three_stage_transmittance.py`
+  - `three_stage_transmittance_evaluation.py`
+- 目前在儲存庫根目錄尚未定義明確的授權檔案。

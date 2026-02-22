@@ -14,83 +14,78 @@
 </p>
 
 
-# Обратное проектирование метаповерхности для спектральной визуализации
+# Inverse Design of Metasurface for Spectral Imaging
 
-[![Status](https://img.shields.io/badge/status-research%20prototype-orange)](#обзор)
-[![Python](https://img.shields.io/badge/python-3.9-blue)](#предварительные-требования)
-[![Platform](https://img.shields.io/badge/platform-linux-lightgrey)](#предварительные-требования)
-[![RCWA](https://img.shields.io/badge/RCWA-S4-required-success)](#предварительные-требования)
-[![PyTorch](https://img.shields.io/badge/framework-pytorch-ee4c2c)](#возможности)
-[![License](https://img.shields.io/badge/license-not%20specified-lightgrey)](#лицензия)
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB">
+  <img alt="Framework" src="https://img.shields.io/badge/Framework-PyTorch-EE4C2C">
+  <img alt="Simulator" src="https://img.shields.io/badge/RCWA-S4-16a34a">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%2FBash-6b7280">
+</p>
 
-Исследовательский репозиторий с акцентом на скрипты для обратного проектирования метаповерхностей при симметрии C4, с полным рабочим циклом от моделирования S4/RCWA до нейросетевого обратного моделирования и оценки.
+Репозиторий исследовательского типа с акцентом на скрипты (исторически упоминается как `inverse_metasurface`) для **обратного проектирования метаповерхностей с C4-симметрией** в спектральной визуализации, включая:
 
-## Обзор
+- генерацию данных RCWA через S4 (`.lua` + shell-скрипты запуска)
+- объединение и предобработку данных (`.csv` -> `.npz`)
+- трёхэтапное обучение нейросети (shape->spectra, spectra->shape, chain fine-tuning)
+- оценку качества и опциональные проверки neural-vs-S4
 
-Этот репозиторий (исторически называвшийся `inverse_metasurface`) организован как рабочее пространство для экспериментов, а не как Python-пакет. Наиболее стабильный рабочий процесс:
+## ✨ Кратко
 
-1. Сгенерировать спектры пропускания и файлы форм с помощью S4 (`.lua` + Bash-лаунчеры).
-2. Объединить и развернуть необработанные CSV-результаты симуляций.
-3. Предобработать объединенные CSV в компактные тензоры `.npz`.
-4. Обучить трехэтапный нейросетевой конвейер:
-   - Этап A: shape -> spectrum
-   - Этап B: spectrum -> shape
-   - Этап C: spectrum -> shape -> spectrum (дообучение с chain loss)
-5. Провести оценку по метрикам/графикам и при необходимости выполнить повторную проверку через S4.
+| Пункт | Детали |
+|---|---|
+| Основная цель | Предсказание геометрии по целевым спектрам пропускания |
+| Формат основного датасета | spectra: `11 x 100`, shape: `4 x 3` |
+| Главный скрипт обучения | `three_stage_transmittance.py` |
+| Главный скрипт оценки | `three_stage_transmittance_evaluation.py` |
+| Скрипты запуска RCWA | `ms_final.sh`, `ms_resume_allargs.sh` |
+| Скрипт объединения | `merge_s4_data_full.py` |
 
-## Возможности
+## 🧠 Исследовательский контекст
 
-- Лаунчеры S4 с воспроизводимыми seed и поддержкой префикса для возобновления запуска.
-- Конвейер обработки данных от сырых `results/*.csv` + `shapes/*` до тензоров, готовых к обучению.
-- Модели на основе Transformer для прямого и обратного оптического проектирования.
-- Поэтапное обучение, кривые валидации и визуализация примеров.
-- Скрипт оценки для метрик по этапам и графиков в стиле публикаций.
-- Опциональная проверка согласованности нейросети и S4 через RCWA-перезапуск с фиксированными формами.
-- Дополнительные ветки экспериментов AVIRIS/шумов в том же репозитории.
+Проект посвящён обратному проектированию метаповерхностей для спектральной визуализации. Конвейер обучения использует спектры пропускания, сгенерированные S4 для разных состояний кристаллизации, и изучает как прямое, так и обратное отображение:
 
-## Исследовательский контекст
+1. **Этап A**: shape -> spectra
+2. **Этап B**: spectra -> shape
+3. **Этап C**: spectra -> shape -> spectra (дообучение с chain loss)
 
-Центральная задача — обратное проектирование метаповерхностей для спектральной визуализации: предсказание геометрии по целевым спектральным сигнатурам с сохранением физически осмысленной структуры. Код обучения работает с тензорами формы и спектра, сгенерированными из RCWA-результатов для нескольких состояний кристаллизации.
+Текущий код предобработки и обучения предполагает:
 
-Текущие допущения конвейера пропускания в коде:
-
-- 11 состояний кристаллизации (`c=0.0 ... 1.0`)
+- 11 состояний кристаллизации (`c = 0.0 ... 1.0`)
 - 100 бинов длины волны на состояние
-- Форма тензора спектра: `11 x 100`
-- Форма тензора геометрии: `4 x 3` (`[presence, x, y]` для максимум 4 точек Q1)
+- представление формы как до 4 точек Q1 с `[presence, x, y]`
 
-## Структура проекта
+## 🗂️ Структура репозитория (основной путь)
 
 ```text
 .
 ├── ms.sh / ms_final.sh / ms_resume_allargs.sh
-├── metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
+├── metasurface_final.lua / metasurface_allargs_resume.lua / metasurface_seed.lua
 ├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
 ├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
+├── results/                # raw S4 output CSVs
+├── shapes/                 # generated polygon vertices
+├── merged_csvs/            # merged CSVs used for preprocessing
+├── outputs_three_stage_*/  # checkpoints, losses, visualizations
 ├── partial_crys_data/
-├── results/                      # необработанные выходы S4
-├── shapes/                       # сгенерированные вершины полигонов
-├── merged_csvs/                  # объединенные CSV для обучения
-├── outputs_three_stage_*/        # чекпоинты + графики этапов
-├── AVIRIS*/ and aviris_*.py      # дополнительные гиперспектральные workflows
-├── how_to_run.md / commands*.md
-├── iccp.yaml
-└── pip_requirements.txt
+└── iccp.yaml
 ```
 
-## Предварительные требования
+## ⚙️ Требования
 
-- Linux + Bash
-- Conda (рекомендуется)
-- Python 3.9
-- Бинарник S4 доступен по пути `../build/S4` (относительно корня репозитория)
-- Опционально GPU с поддержкой CUDA для ускорения обучения
+| Зависимость | Требование |
+|---|---|
+| ОС | Linux |
+| Shell | Bash |
+| Python | 3.9 |
+| Менеджер окружений | Conda (рекомендуется) |
+| Бинарник RCWA | `../build/S4` (относительно корня репозитория) |
+| GPU | Необязательно, но рекомендуется для ускорения обучения |
 
-Допущение: сам S4 собирается вне этого репозитория (ожидается в `../build/S4`).
-
-## Установка
+## 🚀 Установка
 
 ```bash
 git clone <repo-url> inverse_metasurface
@@ -99,7 +94,7 @@ cd inverse_metasurface
 conda env create -f iccp.yaml
 conda activate iccp
 
-# verify RCWA binary path used by shell launchers
+# Required by launcher scripts
 ls -l ../build/S4
 ```
 
@@ -109,11 +104,9 @@ ls -l ../build/S4
 chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
 ```
 
-## Использование
+## 🧪 Сквозной сценарий использования
 
-### 1) Запуск генерации данных S4
-
-Пример: режим overlap с пользовательским префиксом.
+### 1) Сгенерировать RCWA-данные через S4
 
 ```bash
 ./ms_final.sh \
@@ -125,16 +118,22 @@ chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
   -ro 0.30
 ```
 
-### 2) Объединение выходов S4 и вершин формы
+Примечания:
+
+- Скрипты запуска вызывают `../build/S4` с `-t 32` и параллельно выполняют `NQ=1..4`.
+- `ms_final.sh` использует `metasurface_final.lua`.
+- `ms_resume_allargs.sh` использует `metasurface_allargs_resume.lua`.
+
+### 2) Объединить RCWA-выходы с вершинами формы
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
-# output: merged_s4_shapes_myrun.csv
+# -> merged_s4_shapes_myrun.csv
 ```
 
-### 3) Нормализация имен колонок объединенного файла (если нужно)
+### 3) Нормализовать имена столбцов для обучения (при необходимости)
 
-`three_stage_transmittance.py` ожидает `prefix` и `nQ`, тогда как объединенный файл обычно содержит `folder_key` и `NQ`.
+`merge_s4_data_full.py` записывает `folder_key` / `NQ`, а обучающий конвейер ожидает `prefix` / `nQ`.
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
@@ -152,7 +151,7 @@ python three_stage_transmittance.py \
   --output_npz preprocessed_t_data.npz
 ```
 
-### 5) Обучение трехэтапных моделей
+### 5) Обучить трёхэтапные модели
 
 ```bash
 python three_stage_transmittance.py \
@@ -161,13 +160,13 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-Выходные файлы создаются в директории с временной меткой:
+Основная структура выходных данных:
 
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
 
-### 6) Оценка чекпоинтов
+### 6) Оценить чекпойнты
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -176,7 +175,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-### 7) Опционально: сравнение нейросети и S4
+### 7) Опционально: сравнить предсказания нейросети с S4
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -186,108 +185,80 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## Конфигурация
+## 🎛️ Справка по CLI
 
-### Флаги лаунчера S4 (`ms_final.sh`, `ms_resume_allargs.sh`)
+### Флаги скриптов запуска S4 (`ms_final.sh`, `ms_resume_allargs.sh`)
 
-- `-ns`, `--numshapes`: число форм (по умолчанию `100000`)
-- `-r`, `--seed`: seed генератора случайных чисел (по умолчанию `88888`)
-- `-p`, `--prefix`: префикс запуска / ключ возобновления
-- `-g`, `--numg`: параметр базиса геометрии (по умолчанию `80`)
-- `-bo`, `--baseouter`: базовый внешний offset (по умолчанию `0.25`)
-- `-ro`, `--randouter`: случайный внешний offset (по умолчанию `0.20`)
+| Флаг | Значение | По умолчанию |
+|---|---|---|
+| `-ns`, `--numshapes` | Количество форм | `100000` |
+| `-r`, `--seed` | Seed генератора случайных чисел | `88888` |
+| `-p`, `--prefix` | Префикс запуска / ключ возобновления | `""` |
+| `-g`, `--numg` | Параметр геометрического базиса | `80` |
+| `-bo`, `--baseouter` | Базовый внешний сдвиг | `0.25` |
+| `-ro`, `--randouter` | Случайный внешний сдвиг | `0.20` |
 
 ### Флаги обучения (`three_stage_transmittance.py`)
 
-- `--preprocess`: режим предобработки
-- `--input_folder`: папка с объединенными CSV-файлами
-- `--output_npz`: целевой предобработанный файл
-- `--data_npz`: предобработанный датасет для обучения
-- `--csv_file`: прямой CSV-вход (альтернатива NPZ)
-- `--num_epochs`: количество эпох обучения
-- `--batch_size`: размер батча
+| Флаг | Назначение |
+|---|---|
+| `--preprocess` | Запуск режима предобработки |
+| `--input_folder` | Папка с объединёнными CSV-файлами |
+| `--output_npz` | Имя выходного NPZ после предобработки |
+| `--data_npz` | NPZ-датасет для обучения |
+| `--csv_file` | Альтернатива: CSV-датасет |
+| `--test` | Тестовый режим |
+| `--num_epochs` | Количество эпох обучения |
+| `--batch_size` | Размер батча |
 
 ### Флаги оценки (`three_stage_transmittance_evaluation.py`)
 
-- `--model_dir` (обязательный): корневая папка чекпоинтов
-- `--data_npz` или `--csv_file`: датасет для оценки
-- `--output_dir`: папка выходов оценки (создается автоматически, если не указана)
-- `--sample_count`: число визуализируемых примеров
-- `--plot_only`: только перегенерировать графики кривых обучения
+| Флаг | Назначение |
+|---|---|
+| `--model_dir` | Корневая директория чекпойнтов (обязательно) |
+| `--data_npz` / `--csv_file` | Источник данных для оценки |
+| `--output_dir` | Папка для результатов оценки |
+| `--sample_count` | Число визуализируемых примеров |
+| `--seed` | Seed для выбора примеров |
+| `--font_scale` | Масштаб шрифтов на графиках |
+| `--batch_size` | Размер батча при оценке |
+| `--plot_only` | Только переcоздать графики кривых обучения |
 
-## Примеры
+## 🧾 Контракт данных (для предобработки)
 
-### Быстрое обучение из существующего NPZ
+Путь предобработки в `three_stage_transmittance.py` ожидает объединённые CSV-файлы, содержащие:
 
-```bash
-python three_stage_transmittance.py --data_npz preprocessed_t_data.npz --num_epochs 50 --batch_size 2048
-```
+- ID-столбцы: `prefix`, `nQ`, `nS`, `shape_idx`, `c`
+- текст геометрии: `vertices_str`
+- спектральные столбцы: `T@...`
 
-### Режим только графиков для существующего запуска
+Проверки качества, применяемые кодом:
 
-```bash
-python three_stage_transmittance_evaluation.py \
-  --model_dir outputs_three_stage_20250409_123456 \
-  --plot_only
-```
+- группировка по `shape_uid = prefix_nQ_nS_shape_idx`
+- каждая группа должна содержать ровно 11 строк
+- сохраняются только формы с числом точек Q1 в `[1, 4]`
 
-### Совместимая с возобновлением генерация RCWA
-
-```bash
-./ms_resume_allargs.sh -ns 100000 -r 88888 -p myrun -g 80 -bo 0.25 -ro 0.2
-```
-
-## Примечания по разработке
-
-- Это исследовательское рабочее пространство с большим количеством исторических/экспериментальных скриптов.
-- Канонические скрипты конвейера пропускания:
-  - `ms_final.sh` / `ms_resume_allargs.sh`
-  - `merge_s4_data_full.py`
-  - `three_stage_transmittance.py`
-  - `three_stage_transmittance_evaluation.py`
-- Репозиторий содержит много данных (крупные папки результатов/кэша). Для совместной работы крупные артефакты лучше хранить во внешнем или игнорируемом хранилище.
-- В корне нет метаданных сборки пакета (`pyproject.toml`, `setup.py`).
-
-## Устранение неполадок
+## 🛠️ Устранение неполадок
 
 - `../build/S4: No such file or directory`
-  - Соберите или подключите S4 так, чтобы бинарник был доступен по `../build/S4`, либо обновите скрипты запуска под фактический путь к S4.
+  - Соберите/свяжите S4 в `../build/S4` или измените скрипты запуска под ваш фактический путь к S4.
 - `No matching CSVs found in 'results/'`
-  - Убедитесь, что префикс запуска в `merge_s4_data_full.py --prefix <prefix>` совпадает с файлами в `results/`.
+  - Проверьте `--prefix` и шаблон именования выходных файлов в `results/*_output_nQ*_nS*.csv`.
 - `No transmission columns found`
-  - Убедитесь, что объединенный CSV содержит колонки `T@...` из RCWA-выхода.
-- Предобработка возвращает ноль записей
-  - Проверьте, что объединенный CSV содержит необходимые колонки: `prefix`, `nQ`, `nS`, `shape_idx`, `c`, `vertices_str` и 11 строк на каждый UID формы.
-- GPU OOM во время обучения
-  - Уменьшите `--batch_size` (например, до `256` или `128`) и повторите запуск.
-- Скрипт оценки не находит файлы чекпоинтов
-  - Убедитесь, что `--model_dir` содержит:
+  - Убедитесь, что в объединённом CSV есть столбцы `T@...`.
+- Preprocess yields zero records
+  - Проверьте обязательные столбцы и что у каждого shape UID есть 11 строк кристаллизации.
+- GPU OOM during training
+  - Уменьшите `--batch_size` (например, до `256` или `128`).
+- Evaluation cannot find checkpoints
+  - Убедитесь, что в `--model_dir` существуют:
     - `stageA/shape2spec_stageA.pt`
     - `stageB/spec2shape_stageB.pt`
     - `stageC/spec2shape_stageC.pt`
 
-## Дорожная карта
+## 📚 Цитирование
 
-- Добавить минимальное, жестко закрепленное окружение только для основного конвейера пропускания.
-- Добавить единый оркестратор для сценария simulation -> merge -> preprocess -> train -> evaluate.
-- Добавить легковесные smoke-тесты для предобработки и загрузки моделей.
-- Добавить стандартизованные метаданные датасета/версии для воспроизводимости.
-- Разделить конвейеры AVIRIS и metasurface на более понятные подпроекты.
-
-## Вклад
-
-Приветствуются исправления ошибок, улучшения воспроизводимости и улучшения документации.
-
-Рекомендуемый рабочий процесс:
-
-1. Откройте issue с описанием проблемы или предложения.
-2. Держите изменения сфокусированными и совместимыми со скриптовыми соглашениями текущего конвейера.
-3. При изменении CLI-поведения добавляйте примеры команд и ожидаемые результаты.
-4. Если меняете формат данных, добавьте заметки о миграции в `README.md` и связанных скриптах.
-
-## Цитирование
-
-Если этот репозиторий помог вашему исследованию, пожалуйста, процитируйте:
+Если этот репозиторий используется в вашем исследовании, пожалуйста, цитируйте:
 
 ```bibtex
 @article{chen2025inverse,
@@ -298,8 +269,20 @@ python three_stage_transmittance_evaluation.py \
 }
 ```
 
-## Лицензия
+## 🌐 Языковые версии
 
-На данный момент в этом репозитории отсутствует файл лицензии.
+В этом репозитории также доступны другие варианты README, включая:
 
-Допущение: по умолчанию все права защищены, пока сопровождающие проекта не добавят лицензию.
+- `README.en.md`, `README.de.md`, `README.es.md`, `README.fr.md`
+- `README.ru.md`, `README.ja.md`, `README.ko.md`, `README.vi.md`
+- `README.ar.md`, `README.zh-CN.md`, `README.zh-TW.md`
+
+## 📌 Примечания
+
+- Это исследовательская рабочая область со множеством архивных и экспериментальных скриптов.
+- Канонический путь для сценария transmittance сосредоточен вокруг:
+  - `ms_final.sh` / `ms_resume_allargs.sh`
+  - `merge_s4_data_full.py`
+  - `three_stage_transmittance.py`
+  - `three_stage_transmittance_evaluation.py`
+- В корне репозитория пока нет явно заданного файла лицензии.

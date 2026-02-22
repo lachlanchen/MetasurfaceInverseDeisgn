@@ -14,110 +14,78 @@
 </p>
 
 
-# inverse_metasurface ✨
+# Inverse Design of Metasurface for Spectral Imaging
 
-[![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)](#-project-scope)
-[![Python](https://img.shields.io/badge/Python-3.9-3776AB?logo=python&logoColor=white)](#-environment-setup)
-[![Platform](https://img.shields.io/badge/Platform-Linux-2f2f2f?logo=linux&logoColor=white)](#-prerequisites)
-[![RCWA](https://img.shields.io/badge/RCWA-S4%20Required-1f9d55)](#-prerequisites)
-[![PyTorch](https://img.shields.io/badge/Framework-PyTorch-EE4C2C?logo=pytorch&logoColor=white)](#-training-and-evaluation)
-[![License](https://img.shields.io/badge/License-Not%20Specified-lightgrey)](#-license)
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB">
+  <img alt="Framework" src="https://img.shields.io/badge/Framework-PyTorch-EE4C2C">
+  <img alt="Simulator" src="https://img.shields.io/badge/RCWA-S4-16a34a">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%2FBash-6b7280">
+</p>
 
-قاعدة شيفرة بحثية تعتمد على السكربتات أولًا من أجل **التصميم العكسي للميتاسطوح** تحت تماثل C4.
-وتجمع بين:
+مستودع بحثي يعتمد على السكربتات أولًا (ويُشار إليه تاريخيًا باسم `inverse_metasurface`) من أجل **التصميم العكسي لميتاسطح متناظر C4** في التصوير الطيفي، ويغطي:
 
-- 🔬 محاكاة S4/RCWA (`.lua` مع مشغلات Bash)
-- 🧱 دمج البيانات والمعالجة المسبقة من الأطياف الخام + إحداثيات رؤوس الأشكال
-- 🧠 تدريب PyTorch بثلاث مراحل (`shape -> spectra`، ثم `spectra -> shape`، ثم ضبط السلسلة)
-- 📊 التقييم والرسم، بما في ذلك فحوصات الاتساق بين النموذج العصبي وS4
+- توليد بيانات RCWA باستخدام S4 (`.lua` مع مُشغّلات shell)
+- دمج البيانات والمعالجة المسبقة (`.csv` -> `.npz`)
+- تدريب عصبي ثلاثي المراحل (shape->spectra، ثم spectra->shape، ثم ضبط دقيق للسلسلة)
+- التقييم مع خيار المقارنة بين التنبؤات العصبية وS4
 
-<a id="-table-of-contents"></a>
-## 📌 جدول المحتويات
+## ✨ نظرة سريعة
 
-- [نطاق المشروع](#-project-scope)
-- [السياق البحثي](#-research-context)
-- [هيكل المستودع](#-repository-layout)
-- [المتطلبات المسبقة](#-prerequisites)
-- [إعداد البيئة](#-environment-setup)
-- [بدء سريع](#-quick-start)
-- [خط الأنابيب الكامل](#-end-to-end-pipeline)
-- [التدريب والتقييم](#-training-and-evaluation)
-- [أهم خيارات سطر الأوامر](#-key-cli-options)
-- [استكشاف الأخطاء وإصلاحها](#-troubleshooting)
-- [خارطة الطريق](#-roadmap)
-- [الاستشهاد](#-citation)
-- [الترخيص](#-license)
-
-<a id="-project-scope"></a>
-## 🎯 نطاق المشروع
-
-هذا المستودع غني بالتجارب ومتمحور حول السكربتات التنفيذية (وليس مكتبة مُغلَّفة كحزمة).
-وسير العمل الأكثر استقرارًا هو:
-
-1. تشغيل S4 لتوليد المخرجات البصرية الخام داخل `results/` والأشكال داخل `shapes/`
-2. دمج ملفات CSV لكل تشغيل وإعادة تشكيلها إلى بيانات جدوليّة جاهزة للتدريب
-3. تحويل ملفات CSV المدمجة إلى `.npz` مضغوط
-4. تدريب خط أنابيب النفاذية ثلاثي المراحل
-5. تقييم نقاط الحفظ وتصدير الرسومات/المقاييس
-
-<a id="-research-context"></a>
-## 🧪 السياق البحثي
-
-### إعداد المشكلة
-
-المهمة الأساسية للتصميم العكسي هي استرجاع هندسة الميتاسطح من أطياف نفاذية مستهدفة (والعكس صحيح)، مع قيود تماثل C4 ومسوح تبلور جزئي.
-
-### افتراضات البيانات في خط أنابيب النفاذية
-
-| العنصر | القيمة |
+| العنصر | التفاصيل |
 |---|---|
-| حالات التبلور لكل شكل | 11 (`c` من `0.0` إلى `1.0`) |
-| الحاويات الطيفية لكل حالة | 100 |
-| موتر الطيف لكل عينة | `11 x 100` |
-| موتر الشكل لكل عينة | `4 x 3` (`[presence, x, y]`) |
+| الهدف الأساسي | التنبؤ بالهندسة من أطياف النفاذية المستهدفة |
+| شكل مجموعة البيانات الأساسية | spectra: `11 x 100`، shape: `4 x 3` |
+| سكربت التدريب الرئيسي | `three_stage_transmittance.py` |
+| سكربت التقييم الرئيسي | `three_stage_transmittance_evaluation.py` |
+| مشغّل RCWA | `ms_final.sh`, `ms_resume_allargs.sh` |
+| سكربت الدمج | `merge_s4_data_full.py` |
 
-### أهداف التعلم عبر المراحل الثلاث
+## 🧠 السياق البحثي
 
-| المرحلة | الاتجاه | نقطة الحفظ النموذجية |
-|---|---|---|
-| A | `shape -> spectrum` | `stageA/shape2spec_stageA.pt` |
-| B | `spectrum -> shape` | `stageB/spec2shape_stageB.pt` |
-| C | `spectrum -> shape -> spectrum` (ضبط تسلسلي) | `stageC/spec2shape_stageC.pt` |
+يركّز هذا المشروع على التصميم العكسي للميتاسطوح في التصوير الطيفي. يستخدم خط التدريب أطياف نفاذية مولّدة عبر S4 على حالات تبلور مختلفة، ويتعلم كلًا من التحويل الأمامي والعكسي:
 
-<a id="-repository-layout"></a>
-## 🗂️ هيكل المستودع
+1. **المرحلة A**: shape -> spectra
+2. **المرحلة B**: spectra -> shape
+3. **المرحلة C**: spectra -> shape -> spectra (ضبط دقيق عبر chain loss)
+
+يفترض كود المعالجة المسبقة/التدريب حاليًا ما يلي:
+
+- 11 حالة تبلور (`c = 0.0 ... 1.0`)
+- 100 خانة طول موجي لكل حالة
+- تمثيل الشكل كحد أقصى 4 نقاط Q1 بصيغة `[presence, x, y]`
+
+## 🗂️ بنية المستودع (المسار الأساسي)
 
 ```text
 .
 ├── ms.sh / ms_final.sh / ms_resume_allargs.sh
-├── metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
-├── merge.py / merge_s4_data_full.py / merge_s4_data_local.py / merge_robust.py
+├── metasurface_final.lua / metasurface_allargs_resume.lua / metasurface_seed.lua
+├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
 ├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
+├── results/                # ملفات CSV الخام من S4
+├── shapes/                 # رؤوس المضلعات المُولّدة
+├── merged_csvs/            # ملفات CSV المدمجة المستخدمة في المعالجة المسبقة
+├── outputs_three_stage_*/  # checkpoints, losses, visualizations
 ├── partial_crys_data/
-├── results/                          # raw S4 outputs
-├── shapes/                           # generated polygon vertices
-├── outputs_three_stage_*/            # checkpoints + training artifacts
-├── AVIRIS*/ and aviris_*.py          # related hyperspectral experiments
-├── commands.md / how_to_run.md
-├── iccp.yaml
-└── pip_requirements.txt
+└── iccp.yaml
 ```
 
-<a id="-prerequisites"></a>
-## 🧩 المتطلبات المسبقة
+## ⚙️ المتطلبات المسبقة
 
-| الاعتمادية | ملاحظات |
+| الاعتماد | المتطلب |
 |---|---|
-| Linux + Bash | سكربتات الصدفة تفترض مسارات بنمط Linux |
-| Conda | إدارة البيئة الموصى بها (`iccp.yaml`) |
-| Python 3.9 | بيئة التشغيل الأساسية لسكربتات التدريب/التقييم |
-| S4 binary | متوقع في `../build/S4` نسبةً إلى جذر المستودع |
-| CUDA (اختياري) | يسرّع التدريب والتقييم |
+| نظام التشغيل | Linux |
+| الطرفية | Bash |
+| Python | 3.9 |
+| مدير البيئة | Conda (موصى به) |
+| ملف RCWA التنفيذي | `../build/S4` (نسبيًا إلى جذر المستودع) |
+| GPU | اختياري، وموصى به لتدريب أسرع |
 
-<a id="-environment-setup"></a>
-## ⚙️ إعداد البيئة
+## 🚀 الإعداد
 
 ```bash
 git clone <repo-url> inverse_metasurface
@@ -126,37 +94,19 @@ cd inverse_metasurface
 conda env create -f iccp.yaml
 conda activate iccp
 
-# verify S4 path expected by shell runners
+# Required by launcher scripts
 ls -l ../build/S4
 ```
 
-اختياري: تفعيل صلاحية التنفيذ لمشغلات السكربتات:
+اختياري:
 
 ```bash
-chmod +x ms.sh ms_final.sh ms_resume_allargs.sh ms_resume.sh
+chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
 ```
 
-<a id="-quick-start"></a>
-## 🚀 بدء سريع
+## 🧪 الاستخدام الكامل من البداية للنهاية
 
-إذا كان لديك `preprocessed_t_data.npz` مسبقًا:
-
-```bash
-python three_stage_transmittance.py \
-  --data_npz preprocessed_t_data.npz \
-  --num_epochs 100 \
-  --batch_size 1024
-
-python three_stage_transmittance_evaluation.py \
-  --model_dir outputs_three_stage_YYYYMMDD_HHMMSS \
-  --data_npz preprocessed_t_data.npz \
-  --sample_count 8
-```
-
-<a id="-end-to-end-pipeline"></a>
-## 🔁 خط الأنابيب الكامل
-
-### 1) توليد بيانات S4
+### 1) توليد بيانات RCWA عبر S4
 
 ```bash
 ./ms_final.sh \
@@ -168,33 +118,40 @@ python three_stage_transmittance_evaluation.py \
   -ro 0.30
 ```
 
-### 2) دمج مخرجات S4 مع رؤوس الأشكال
+ملاحظات:
+
+- تستدعي المشغلات `../build/S4` مع `-t 32` وتُشغّل `NQ=1..4` بالتوازي.
+- يستخدم `ms_final.sh` الملف `metasurface_final.lua`.
+- يستخدم `ms_resume_allargs.sh` الملف `metasurface_allargs_resume.lua`.
+
+### 2) دمج مخرجات RCWA مع رؤوس الأشكال
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
 # -> merged_s4_shapes_myrun.csv
 ```
 
-### 3) توحيد أسماء أعمدة CSV قبل المعالجة المسبقة
+### 3) توحيد أسماء الأعمدة للتدريب (عند الحاجة)
 
-المعالجة المسبقة في `three_stage_transmittance.py` تتوقع `prefix` و `nQ`، بينما قد يحتوي الإخراج المدمج على `folder_key` و `NQ`.
+يكتب `merge_s4_data_full.py` عمودي `folder_key` / `NQ`، بينما يتوقع خط التدريب `prefix` / `nQ`.
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
 ```
 
-### 4) معالجة CSV إلى NPZ
+### 4) المعالجة المسبقة من CSV إلى NPZ
 
 ```bash
 mkdir -p merged_csvs
 mv merged_s4_shapes_myrun.csv merged_csvs/
 
-python three_stage_transmittance.py --preprocess \
+python three_stage_transmittance.py \
+  --preprocess \
   --input_folder merged_csvs \
   --output_npz preprocessed_t_data.npz
 ```
 
-### 5) تدريب المراحل الثلاث
+### 5) تدريب نماذج المراحل الثلاث
 
 ```bash
 python three_stage_transmittance.py \
@@ -203,7 +160,13 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-### 6) التقييم والرسم
+هيكل المخرجات الرئيسي:
+
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
+
+### 6) تقييم checkpoints
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -212,7 +175,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-### 7) اختياري: مقارنة النموذج العصبي مع S4
+### 7) اختياري: مقارنة التنبؤات العصبية مع S4
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -222,91 +185,80 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-<a id="-training-and-evaluation"></a>
-## 🧠 التدريب والتقييم
+## 🎛️ مرجع سطر الأوامر (CLI)
 
-### السكربتات الأساسية
-
-| السكربت | الغرض |
-|---|---|
-| `three_stage_transmittance.py` | معالجة مسبقة + تدريب المراحل A/B/C |
-| `three_stage_transmittance_evaluation.py` | تقييم نقاط الحفظ، حساب المقاييس، حفظ الرسومات |
-| `FilterShapeS4_Evaluator_Transmittance.py` | مقارنة تنبؤات النموذج المتعلَّم مع سلوك S4 |
-
-### المخرجات المعتادة
-
-| المخرج | الموقع |
-|---|---|
-| نقاط حفظ المراحل | `outputs_three_stage_*/stageA|stageB|stageC/` |
-| رسومات التقييم | `outputs_three_stage_*/evaluation_<timestamp>/` |
-| ملفات مقاييس CSV | `evaluation_metrics.csv`, `metrics_summary.csv` |
-
-<a id="-key-cli-options"></a>
-## 🛠️ أهم خيارات سطر الأوامر
-
-### مشغلات S4 (`ms_final.sh`, `ms_resume_allargs.sh`)
+### خيارات مشغّل S4 (`ms_final.sh`, `ms_resume_allargs.sh`)
 
 | الخيار | المعنى | الافتراضي |
 |---|---|---|
 | `-ns`, `--numshapes` | عدد الأشكال | `100000` |
 | `-r`, `--seed` | البذرة العشوائية | `88888` |
-| `-p`, `--prefix` | بادئة التشغيل/مفتاح الاستكمال | فارغ |
-| `-g`, `--numg` | إعداد قاعدة الهندسة | `80` |
+| `-p`, `--prefix` | بادئة التشغيل / مفتاح الاستئناف | `""` |
+| `-g`, `--numg` | معامل أساس الهندسة | `80` |
 | `-bo`, `--baseouter` | إزاحة الحافة الخارجية الأساسية | `0.25` |
-| `-ro`, `--randouter` | إزاحة الحافة الخارجية العشوائية | `0.20` |
+| `-ro`, `--randouter` | إزاحة خارجية عشوائية | `0.20` |
 
-### التدريب (`three_stage_transmittance.py`)
+### خيارات التدريب (`three_stage_transmittance.py`)
 
-| الخيار | المعنى | الافتراضي |
-|---|---|---|
-| `--preprocess` | التبديل إلى وضع المعالجة المسبقة | off |
-| `--input_folder` | مجلد ملفات CSV المدمجة | `""` |
-| `--output_npz` | ملف خرج المعالجة المسبقة | `preprocessed_data.npz` |
-| `--data_npz` | دخل NPZ للتدريب | `""` |
-| `--csv_file` | دخل CSV مباشر للتدريب | `""` |
-| `--test` | تفعيل وضع الاختبار | off |
-| `--num_epochs` | عدد العصور لكل مرحلة | `10` |
-| `--batch_size` | حجم الدفعة | `4096` |
+| الخيار | الغرض |
+|---|---|
+| `--preprocess` | تشغيل وضع المعالجة المسبقة |
+| `--input_folder` | مجلد ملفات CSV المدمجة |
+| `--output_npz` | اسم ملف NPZ الناتج بعد المعالجة |
+| `--data_npz` | مجموعة بيانات NPZ للتدريب |
+| `--csv_file` | بديل مجموعة بيانات CSV |
+| `--test` | وضع الاختبار |
+| `--num_epochs` | عدد عصور التدريب |
+| `--batch_size` | حجم الدفعة |
 
-### التقييم (`three_stage_transmittance_evaluation.py`)
+### خيارات التقييم (`three_stage_transmittance_evaluation.py`)
 
-| الخيار | المعنى | الافتراضي |
-|---|---|---|
-| `--model_dir` | مجلد التشغيل المدرّب (إلزامي) | - |
-| `--data_npz` | دخل NPZ للتقييم | `""` |
-| `--csv_file` | دخل CSV للتقييم | `""` |
-| `--output_dir` | مجلد خرج مخصص | تلقائي |
-| `--sample_count` | عدد العينات المعروضة بصريًا | `4` |
-| `--seed` | بذرة عشوائية لاختيار العينات | `23` |
-| `--font_scale` | معامل تكبير الخط في الرسومات | `1.0` |
-| `--batch_size` | حجم دفعة DataLoader في التقييم | `32` |
-| `--plot_only` | إعادة توليد الرسومات فقط | off |
+| الخيار | الغرض |
+|---|---|
+| `--model_dir` | الدليل الجذر للـ checkpoint (مطلوب) |
+| `--data_npz` / `--csv_file` | مصدر بيانات التقييم |
+| `--output_dir` | مجلد مخرجات التقييم |
+| `--sample_count` | عدد العينات المعروضة بصريًا |
+| `--seed` | البذرة العشوائية لاختيار العينات |
+| `--font_scale` | مقياس خط الرسومات |
+| `--batch_size` | حجم دفعة التقييم |
+| `--plot_only` | إعادة توليد منحنيات التدريب فقط |
 
-<a id="-troubleshooting"></a>
-## 🧯 استكشاف الأخطاء وإصلاحها
+## 🧾 عقد البيانات (للمعالجة المسبقة)
 
-| العَرَض | السبب المُرجّح | الحل |
-|---|---|---|
-| `../build/S4: No such file or directory` | ملف S4 التنفيذي ليس في المسار النسبي المتوقع | ضع/ابنِ S4 في `../build/S4` أو عدّل السكربتات |
-| `Must specify either --data_npz or --csv_file` | مفقود وسيط بيانات للتدريب/التقييم | مرّر مصدر بيانات واحدًا فقط |
-| `No transmission columns found` | ملف CSV المدمج يفتقد أعمدة `T@...` | أعد الدمج/إعادة التشكيل وتحقق من العناوين |
-| `KeyError: 'prefix'` in preprocess | خرج الدمج لا يزال يستخدم `folder_key`/`NQ` | أعد تسمية الأعمدة إلى `prefix`/`nQ` قبل المعالجة المسبقة |
-| GPU OOM | حجم الدفعة كبير جدًا | خفّض `--batch_size` |
-| Missing checkpoints during eval | نقاط حفظ المراحل غير موجودة/المسار خاطئ | تحقق من وجود ملفات stageA/B/C ضمن `--model_dir` المحدد |
+مسار المعالجة المسبقة في `three_stage_transmittance.py` يتوقع ملفات CSV مدمجة تحتوي على:
 
-<a id="-roadmap"></a>
-## 🧭 خارطة الطريق
+- أعمدة المعرّف: `prefix`, `nQ`, `nS`, `shape_idx`, `c`
+- نص الهندسة: `vertices_str`
+- أعمدة الطيف: `T@...`
 
-- توحيد مخطط CSV المدمج عبر سكربتات الدمج (`prefix` و `nQ`)
-- إضافة اختبارات آلية للدمج/المعالجة المسبقة/تحميل نقاط الحفظ
-- توفير نقطة دخول CLI واحدة لتنسيق خط الأنابيب بالكامل
-- إضافة بيانات تعريف dataset/run لتحسين قابلية إعادة الإنتاج
-- إضافة ترخيص مفتوح المصدر بشكل صريح
+فحوصات الجودة المطبقة في الكود:
 
-<a id="-citation"></a>
+- التجميع بواسطة `shape_uid = prefix_nQ_nS_shape_idx`
+- يجب أن تحتوي كل مجموعة على 11 صفًا بالضبط
+- يتم الاحتفاظ فقط بالأشكال ذات عدد نقاط Q1 ضمن `[1, 4]`
+
+## 🛠️ استكشاف الأخطاء وإصلاحها
+
+- `../build/S4: No such file or directory`
+  - أنشئ/اربط S4 في `../build/S4` أو عدّل سكربتات التشغيل إلى مسار S4 الفعلي لديك.
+- `No matching CSVs found in 'results/'`
+  - تحقّق من `--prefix` ونمط التسمية في `results/*_output_nQ*_nS*.csv`.
+- `No transmission columns found`
+  - تأكّد أن ملف CSV المدمج يحتوي على أعمدة `T@...`.
+- تعطي المعالجة المسبقة صفر سجلات
+  - تحقّق من الأعمدة المطلوبة وأن كل shape UID لديه 11 صفًا لحالات التبلور.
+- نفاد ذاكرة GPU أثناء التدريب
+  - قلّل `--batch_size` (مثلًا `256` أو `128`).
+- لا يستطيع التقييم العثور على checkpoints
+  - تأكّد من وجود التالي داخل `--model_dir`:
+    - `stageA/shape2spec_stageA.pt`
+    - `stageB/spec2shape_stageB.pt`
+    - `stageC/spec2shape_stageC.pt`
+
 ## 📚 الاستشهاد
 
-إذا كان هذا المستودع مفيدًا في بحثك، يُرجى الاستشهاد به:
+إذا ساهم هذا المستودع في بحثك، يُرجى الاستشهاد به كما يلي:
 
 ```bibtex
 @article{chen2025inverse,
@@ -317,7 +269,20 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 }
 ```
 
-<a id="-license"></a>
-## 📄 الترخيص
+## 🌐 نسخ اللغات
 
-لا يوجد ملف `LICENSE` حاليًا في هذا المستودع. لذلك تظل حقوق الاستخدام وإعادة التوزيع غير محددة إلى أن تتم إضافة ترخيص.
+تتوفر في هذا المستودع نسخ إضافية من README، منها:
+
+- `README.en.md`, `README.de.md`, `README.es.md`, `README.fr.md`
+- `README.ru.md`, `README.ja.md`, `README.ko.md`, `README.vi.md`
+- `README.ar.md`, `README.zh-CN.md`, `README.zh-TW.md`
+
+## 📌 ملاحظات
+
+- هذه مساحة عمل بحثية تضم العديد من السكربتات المؤرشفة والاستكشافية.
+- المسار القياسي الخاص بالنفاذية يتمحور حول:
+  - `ms_final.sh` / `ms_resume_allargs.sh`
+  - `merge_s4_data_full.py`
+  - `three_stage_transmittance.py`
+  - `three_stage_transmittance_evaluation.py`
+- لا يوجد حاليًا ملف ترخيص صريح معرّف في جذر المستودع.

@@ -14,104 +14,78 @@
 </p>
 
 
-# inverse_metasurface ✨
+# Inverse Design of Metasurface for Spectral Imaging
 
-[![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)](#-project-scope)
-[![Python](https://img.shields.io/badge/Python-3.9-3776AB?logo=python&logoColor=white)](#-environment-setup)
-[![Platform](https://img.shields.io/badge/Platform-Linux-2f2f2f?logo=linux&logoColor=white)](#-prerequisites)
-[![RCWA](https://img.shields.io/badge/RCWA-S4%20Required-1f9d55)](#-prerequisites)
-[![PyTorch](https://img.shields.io/badge/Framework-PyTorch-EE4C2C?logo=pytorch&logoColor=white)](#-training-and-evaluation)
-[![License](https://img.shields.io/badge/License-Not%20Specified-lightgrey)](#-license)
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB">
+  <img alt="Framework" src="https://img.shields.io/badge/Framework-PyTorch-EE4C2C">
+  <img alt="Simulator" src="https://img.shields.io/badge/RCWA-S4-16a34a">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%2FBash-6b7280">
+</p>
 
-C4 대칭 조건에서 **메타표면 역설계**를 수행하기 위한 스크립트 중심 연구 코드베이스입니다.
-다음 요소를 결합합니다.
+스펙트럼 이미징을 위한 **C4 대칭 메타표면 역설계** 연구용 스크립트 중심 저장소(과거 명칭: `inverse_metasurface`)로, 다음 범위를 다룹니다.
 
-- 🔬 S4/RCWA 시뮬레이션 (`.lua` + Bash 실행 스크립트)
-- 🧱 원시 스펙트럼 + 형상 버텍스 데이터 병합 및 전처리
-- 🧠 3단계 PyTorch 학습 (`shape -> spectra`, `spectra -> shape`, 체인 미세조정)
-- 📊 평가 및 시각화(신경망 예측과 S4 일치성 비교 포함)
+- S4 기반 RCWA 데이터 생성 (`.lua` + 셸 런처)
+- 데이터 병합 및 전처리 (`.csv` -> `.npz`)
+- 3단계 신경망 학습 (shape->spectra, spectra->shape, 체인 미세조정)
+- 평가 및 선택적 neural-vs-S4 비교
 
-## 📌 목차
+## ✨ 한눈에 보기
 
-- [프로젝트 범위](#-project-scope)
-- [연구 맥락](#-research-context)
-- [저장소 구조](#-repository-layout)
-- [사전 요구사항](#-prerequisites)
-- [환경 설정](#-environment-setup)
-- [빠른 시작](#-quick-start)
-- [엔드투엔드 파이프라인](#-end-to-end-pipeline)
-- [학습 및 평가](#-training-and-evaluation)
-- [주요 CLI 옵션](#-key-cli-options)
-- [문제 해결](#-troubleshooting)
-- [로드맵](#-roadmap)
-- [인용](#-citation)
-- [라이선스](#-license)
-
-## 🎯 프로젝트 범위
-
-이 저장소는 실험 비중이 높고, 패키지형 라이브러리보다는 실행 가능한 스크립트 중심으로 구성되어 있습니다.
-가장 안정적인 워크플로는 다음과 같습니다.
-
-1. S4를 실행해 `results/`에 원시 광학 출력, `shapes/`에 형상 데이터를 생성
-2. 실행별 CSV를 병합/피벗하여 학습용 테이블 데이터 생성
-3. 병합된 CSV를 압축 `.npz`로 변환
-4. 3단계 투과율 파이프라인 학습
-5. 체크포인트 평가 후 플롯/지표 내보내기
-
-## 🧪 연구 맥락
-
-### 문제 설정
-
-핵심 역설계 과제는 C4 대칭 제약과 부분 결정화 스윕 조건에서, 목표 투과 스펙트럼으로부터 메타표면 형상을 복원하고(및 그 역방향) 학습하는 것입니다.
-
-### 투과율 파이프라인의 데이터 가정
-
-| 항목 | 값 |
+| 항목 | 내용 |
 |---|---|
-| 형상당 결정화 상태 수 | 11 (`c` from `0.0` to `1.0`) |
-| 상태당 스펙트럼 빈 수 | 100 |
-| 샘플당 스펙트럼 텐서 | `11 x 100` |
-| 샘플당 형상 텐서 | `4 x 3` (`[presence, x, y]`) |
+| 핵심 목표 | 목표 투과 스펙트럼으로부터 기하 구조 예측 |
+| 핵심 데이터 형태 | spectra: `11 x 100`, shape: `4 x 3` |
+| 메인 학습 스크립트 | `three_stage_transmittance.py` |
+| 메인 평가 스크립트 | `three_stage_transmittance_evaluation.py` |
+| RCWA 런처 | `ms_final.sh`, `ms_resume_allargs.sh` |
+| 병합 스크립트 | `merge_s4_data_full.py` |
 
-### 3단계 학습 목표
+## 🧠 연구 맥락
 
-| 단계 | 방향 | 일반적인 체크포인트 |
-|---|---|---|
-| A | `shape -> spectrum` | `stageA/shape2spec_stageA.pt` |
-| B | `spectrum -> shape` | `stageB/spec2shape_stageB.pt` |
-| C | `spectrum -> shape -> spectrum` (체인 미세조정) | `stageC/spec2shape_stageC.pt` |
+이 프로젝트는 스펙트럼 이미징용 메타표면의 역설계에 초점을 둡니다. 학습 파이프라인은 결정화 상태 전반에서 S4로 생성한 투과 스펙트럼을 사용하며, 순방향/역방향 매핑을 모두 학습합니다.
 
-## 🗂️ 저장소 구조
+1. **Stage A**: shape -> spectra
+2. **Stage B**: spectra -> shape
+3. **Stage C**: spectra -> shape -> spectra (chain loss 미세조정)
+
+현재 전처리/학습 코드는 다음 가정을 사용합니다.
+
+- 결정화 상태 11개 (`c = 0.0 ... 1.0`)
+- 상태별 파장 bin 100개
+- shape 표현: 최대 4개의 Q1 포인트, 각 포인트는 `[presence, x, y]`
+
+## 🗂️ 저장소 구조 (핵심 경로)
 
 ```text
 .
 ├── ms.sh / ms_final.sh / ms_resume_allargs.sh
-├── metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
-├── merge.py / merge_s4_data_full.py / merge_s4_data_local.py / merge_robust.py
+├── metasurface_final.lua / metasurface_allargs_resume.lua / metasurface_seed.lua
+├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
 ├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
+├── results/                # raw S4 output CSVs
+├── shapes/                 # generated polygon vertices
+├── merged_csvs/            # merged CSVs used for preprocessing
+├── outputs_three_stage_*/  # checkpoints, losses, visualizations
 ├── partial_crys_data/
-├── results/                          # raw S4 outputs
-├── shapes/                           # generated polygon vertices
-├── outputs_three_stage_*/            # checkpoints + training artifacts
-├── AVIRIS*/ and aviris_*.py          # related hyperspectral experiments
-├── commands.md / how_to_run.md
-├── iccp.yaml
-└── pip_requirements.txt
+└── iccp.yaml
 ```
 
-## 🧩 사전 요구사항
+## ⚙️ 사전 요구사항
 
-| 의존성 | 설명 |
+| 의존성 | 요구사항 |
 |---|---|
-| Linux + Bash | 셸 스크립트가 Linux 스타일 경로를 가정함 |
-| Conda | 권장 환경 관리 도구 (`iccp.yaml`) |
-| Python 3.9 | 학습/평가 스크립트의 주 실행 환경 |
-| S4 binary | 저장소 루트 기준 `../build/S4` 경로를 기대 |
-| CUDA (optional) | 학습 및 평가 속도 향상 |
+| OS | Linux |
+| Shell | Bash |
+| Python | 3.9 |
+| 환경 관리자 | Conda (권장) |
+| RCWA 바이너리 | `../build/S4` (repo root 기준 상대 경로) |
+| GPU | 선택 사항 (빠른 학습을 위해 권장) |
 
-## ⚙️ 환경 설정
+## 🚀 설치
 
 ```bash
 git clone <repo-url> inverse_metasurface
@@ -120,35 +94,19 @@ cd inverse_metasurface
 conda env create -f iccp.yaml
 conda activate iccp
 
-# verify S4 path expected by shell runners
+# Required by launcher scripts
 ls -l ../build/S4
 ```
 
-셸 실행 스크립트에 실행 권한이 필요하면:
+선택 사항:
 
 ```bash
-chmod +x ms.sh ms_final.sh ms_resume_allargs.sh ms_resume.sh
+chmod +x ms.sh ms_final.sh ms_resume_allargs.sh
 ```
 
-## 🚀 빠른 시작
+## 🧪 전체 워크플로 사용법
 
-이미 `preprocessed_t_data.npz`가 있다면:
-
-```bash
-python three_stage_transmittance.py \
-  --data_npz preprocessed_t_data.npz \
-  --num_epochs 100 \
-  --batch_size 1024
-
-python three_stage_transmittance_evaluation.py \
-  --model_dir outputs_three_stage_YYYYMMDD_HHMMSS \
-  --data_npz preprocessed_t_data.npz \
-  --sample_count 8
-```
-
-## 🔁 엔드투엔드 파이프라인
-
-### 1) S4 데이터 생성
+### 1) S4로 RCWA 데이터 생성
 
 ```bash
 ./ms_final.sh \
@@ -160,16 +118,22 @@ python three_stage_transmittance_evaluation.py \
   -ro 0.30
 ```
 
-### 2) S4 출력 + 형상 버텍스 병합
+참고:
+
+- 런처는 `../build/S4`를 `-t 32`로 호출하고 `NQ=1..4`를 병렬 실행합니다.
+- `ms_final.sh`는 `metasurface_final.lua`를 사용합니다.
+- `ms_resume_allargs.sh`는 `metasurface_allargs_resume.lua`를 사용합니다.
+
+### 2) shape vertices와 RCWA 출력 병합
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
 # -> merged_s4_shapes_myrun.csv
 ```
 
-### 3) 전처리를 위한 CSV 컬럼명 정규화
+### 3) 학습용 병합 컬럼명 정규화 (필요 시)
 
-`three_stage_transmittance.py` 전처리는 `prefix`와 `nQ`를 기대하지만, 병합 결과에는 `folder_key`와 `NQ`가 들어있을 수 있습니다.
+`merge_s4_data_full.py`는 `folder_key` / `NQ`를 기록하지만, 학습 파이프라인은 `prefix` / `nQ`를 기대합니다.
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
@@ -181,12 +145,13 @@ python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p
 mkdir -p merged_csvs
 mv merged_s4_shapes_myrun.csv merged_csvs/
 
-python three_stage_transmittance.py --preprocess \
+python three_stage_transmittance.py \
+  --preprocess \
   --input_folder merged_csvs \
   --output_npz preprocessed_t_data.npz
 ```
 
-### 5) 3단계 학습
+### 5) 3단계 모델 학습
 
 ```bash
 python three_stage_transmittance.py \
@@ -195,7 +160,13 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-### 6) 평가 및 플로팅
+주요 출력 구조:
+
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
+- `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
+
+### 6) 체크포인트 평가
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -204,7 +175,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-### 7) 선택 사항: 신경망 vs S4 비교
+### 7) 선택 사항: 신경망 예측과 S4 비교
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -214,82 +185,76 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## 🧠 학습 및 평가
+## 🎛️ CLI 레퍼런스
 
-### 주요 스크립트
-
-| 스크립트 | 목적 |
-|---|---|
-| `three_stage_transmittance.py` | 전처리 + A/B/C 단계 학습 |
-| `three_stage_transmittance_evaluation.py` | 체크포인트 평가, 지표 계산, 플롯 저장 |
-| `FilterShapeS4_Evaluator_Transmittance.py` | 학습된 예측과 S4 동작 비교 |
-
-### 일반적인 출력물
-
-| 산출물 | 위치 |
-|---|---|
-| 단계별 체크포인트 | `outputs_three_stage_*/stageA|stageB|stageC/` |
-| 평가 그림 | `outputs_three_stage_*/evaluation_<timestamp>/` |
-| 지표 CSV | `evaluation_metrics.csv`, `metrics_summary.csv` |
-
-## 🛠️ 주요 CLI 옵션
-
-### S4 실행 스크립트 (`ms_final.sh`, `ms_resume_allargs.sh`)
+### S4 런처 플래그 (`ms_final.sh`, `ms_resume_allargs.sh`)
 
 | Flag | 의미 | 기본값 |
 |---|---|---|
-| `-ns`, `--numshapes` | 형상 개수 | `100000` |
+| `-ns`, `--numshapes` | shape 개수 | `100000` |
 | `-r`, `--seed` | 랜덤 시드 | `88888` |
-| `-p`, `--prefix` | 실행 prefix/resume key | empty |
-| `-g`, `--numg` | 기하학 기준 설정 | `80` |
+| `-p`, `--prefix` | 실행 prefix / 재시작 키 | `""` |
+| `-g`, `--numg` | 기하 basis 파라미터 | `80` |
 | `-bo`, `--baseouter` | 기본 외곽 오프셋 | `0.25` |
 | `-ro`, `--randouter` | 랜덤 외곽 오프셋 | `0.20` |
 
-### 학습 (`three_stage_transmittance.py`)
+### 학습 플래그 (`three_stage_transmittance.py`)
 
-| Flag | 의미 | 기본값 |
-|---|---|---|
-| `--preprocess` | 전처리 모드로 전환 | off |
-| `--input_folder` | 병합 CSV가 있는 폴더 | `""` |
-| `--output_npz` | 전처리 출력 파일 | `preprocessed_data.npz` |
-| `--data_npz` | 학습용 NPZ 입력 | `""` |
-| `--csv_file` | 직접 CSV 학습 입력 | `""` |
-| `--test` | 테스트 모드 토글 | off |
-| `--num_epochs` | 단계당 에폭 수 | `10` |
-| `--batch_size` | 배치 크기 | `4096` |
+| Flag | 용도 |
+|---|---|
+| `--preprocess` | 전처리 모드 실행 |
+| `--input_folder` | 병합 CSV 파일 폴더 |
+| `--output_npz` | 전처리 결과 NPZ 파일명 |
+| `--data_npz` | 학습용 NPZ 데이터셋 |
+| `--csv_file` | CSV 데이터셋 대체 입력 |
+| `--test` | 테스트 모드 |
+| `--num_epochs` | 학습 epoch 수 |
+| `--batch_size` | 배치 크기 |
 
-### 평가 (`three_stage_transmittance_evaluation.py`)
+### 평가 플래그 (`three_stage_transmittance_evaluation.py`)
 
-| Flag | 의미 | 기본값 |
-|---|---|---|
-| `--model_dir` | 학습 실행 디렉터리 (필수) | - |
-| `--data_npz` | 평가용 NPZ 입력 | `""` |
-| `--csv_file` | 평가용 CSV 입력 | `""` |
-| `--output_dir` | 사용자 지정 출력 디렉터리 | auto |
-| `--sample_count` | 시각화 샘플 수 | `4` |
-| `--seed` | 샘플 선택용 랜덤 시드 | `23` |
-| `--font_scale` | 플롯 폰트 배율 | `1.0` |
-| `--batch_size` | eval dataloader 배치 크기 | `32` |
-| `--plot_only` | 플롯만 재생성 | off |
+| Flag | 용도 |
+|---|---|
+| `--model_dir` | 체크포인트 루트 디렉터리 (필수) |
+| `--data_npz` / `--csv_file` | 평가 데이터 소스 |
+| `--output_dir` | 평가 출력 폴더 |
+| `--sample_count` | 시각화 샘플 수 |
+| `--seed` | 샘플 선택용 랜덤 시드 |
+| `--font_scale` | 플롯 폰트 스케일 |
+| `--batch_size` | 평가 배치 크기 |
+| `--plot_only` | 학습 곡선 플롯만 재생성 |
 
-## 🧯 문제 해결
+## 🧾 데이터 계약 (전처리 기준)
 
-| 증상 | 가능성 높은 원인 | 해결 방법 |
-|---|---|---|
-| `../build/S4: No such file or directory` | S4 바이너리가 기대한 상대 경로에 없음 | `../build/S4`에 S4를 배치/빌드하거나 스크립트 경로 수정 |
-| `Must specify either --data_npz or --csv_file` | 학습/평가 데이터셋 인자가 누락됨 | 데이터 입력 인자를 정확히 하나만 지정 |
-| `No transmission columns found` | 병합 CSV에 `T@...` 컬럼이 없음 | 병합/피벗을 다시 실행하고 헤더 확인 |
-| `KeyError: 'prefix'` in preprocess | 병합 출력이 여전히 `folder_key`/`NQ`를 사용함 | 전처리 전에 컬럼을 `prefix`/`nQ`로 변경 |
-| GPU OOM | 배치가 너무 큼 | `--batch_size` 축소 |
-| Missing checkpoints during eval | 단계 체크포인트가 없거나 경로가 잘못됨 | 선택한 `--model_dir` 아래 stageA/B/C 파일 확인 |
+`three_stage_transmittance.py`의 전처리 경로는 다음 컬럼을 포함한 병합 CSV를 기대합니다.
 
-## 🧭 로드맵
+- ID 컬럼: `prefix`, `nQ`, `nS`, `shape_idx`, `c`
+- geometry 텍스트: `vertices_str`
+- 스펙트럼 컬럼: `T@...`
 
-- 병합 스크립트 전반의 CSV 스키마 통일 (`prefix`, `nQ` 명명)
-- 병합/전처리/체크포인트 로딩 자동 테스트 추가
-- 전체 파이프라인 오케스트레이션용 단일 CLI 진입점 제공
-- 재현성을 위한 데이터셋/실행 매니페스트 추가
-- 명시적 오픈소스 라이선스 추가
+코드에서 수행하는 품질 검사:
+
+- `shape_uid = prefix_nQ_nS_shape_idx` 기준 그룹화
+- 각 그룹은 정확히 11개 행을 포함해야 함
+- Q1 포인트 수가 `[1, 4]` 범위인 shape만 유지
+
+## 🛠️ 문제 해결
+
+- `../build/S4: No such file or directory`
+  - `../build/S4`에 S4를 빌드/링크하거나, 실제 S4 경로에 맞게 런처 스크립트를 수정하세요.
+- `No matching CSVs found in 'results/'`
+  - `results/*_output_nQ*_nS*.csv`에서 `--prefix`와 출력 파일명 규칙을 확인하세요.
+- `No transmission columns found`
+  - 병합 CSV에 `T@...` 컬럼이 포함되어 있는지 확인하세요.
+- 전처리 결과가 0건일 때
+  - 필수 컬럼 존재 여부와 각 shape UID가 11개 결정화 행을 갖는지 확인하세요.
+- 학습 중 GPU OOM
+  - `--batch_size`를 줄이세요(예: `256` 또는 `128`).
+- 평가에서 체크포인트를 찾지 못할 때
+  - `--model_dir` 아래에 다음 파일이 있는지 확인하세요:
+    - `stageA/shape2spec_stageA.pt`
+    - `stageB/spec2shape_stageB.pt`
+    - `stageC/spec2shape_stageC.pt`
 
 ## 📚 인용
 
@@ -304,6 +269,20 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 }
 ```
 
-## 📄 라이선스
+## 🌐 언어 버전
 
-현재 이 저장소에는 `LICENSE` 파일이 없습니다. 따라서 라이선스가 추가되기 전까지 사용 및 재배포 권한은 명시되어 있지 않습니다.
+이 저장소에는 다음 README 변형도 포함되어 있습니다.
+
+- `README.en.md`, `README.de.md`, `README.es.md`, `README.fr.md`
+- `README.ru.md`, `README.ja.md`, `README.ko.md`, `README.vi.md`
+- `README.ar.md`, `README.zh-CN.md`, `README.zh-TW.md`
+
+## 📌 참고
+
+- 이 저장소는 보관용/탐색용 스크립트를 다수 포함한 연구 워크스페이스입니다.
+- 표준 transmittance 경로는 다음을 중심으로 구성됩니다.
+  - `ms_final.sh` / `ms_resume_allargs.sh`
+  - `merge_s4_data_full.py`
+  - `three_stage_transmittance.py`
+  - `three_stage_transmittance_evaluation.py`
+- 현재 저장소 루트에는 명시적인 라이선스 파일이 없습니다.
