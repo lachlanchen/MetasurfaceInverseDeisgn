@@ -1,193 +1,192 @@
-English | 中文繁體 | 中文简体 | 日本語 | 한국어 | Tiếng Việt | العربية | Français | Español | Deutsch | Русский
+<p>
+  <b>Languages:</b>
+  <a href="README.md">English</a>
+  · <a href="README.zh-TW.md">中文（繁體）</a>
+  · <a href="README.zh-CN.md">中文 (简体)</a>
+  · <a href="README.ja.md">日本語</a>
+  · <a href="README.ko.md">한국어</a>
+  · <a href="README.vi.md">Tiếng Việt</a>
+  · <a href="README.ar.md">العربية</a>
+  · <a href="README.fr.md">Français</a>
+  · <a href="README.es.md">Español</a>
+  · <a href="README.de.md">Deutsch</a>
+  · <a href="README.ru.md">Русский</a>
+</p>
 
-# inverse_metasurface
 
-<div align="center">
+# inverse_metasurface ✨
 
-[![Status](https://img.shields.io/badge/status-experimental-orange)](#-路线图)
-[![Python](https://img.shields.io/badge/python-3.9-blue)](#-前置要求)
-[![Platform](https://img.shields.io/badge/platform-linux-lightgrey)](#-前置要求)
-[![S4](https://img.shields.io/badge/S4-required-success)](#-前置要求)
-[![License](https://img.shields.io/badge/license-unset-lightgrey)](#-许可证)
+[![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)](#-项目范围)
+[![Python](https://img.shields.io/badge/Python-3.9-3776AB?logo=python&logoColor=white)](#-环境配置)
+[![Platform](https://img.shields.io/badge/Platform-Linux-2f2f2f?logo=linux&logoColor=white)](#-前置条件)
+[![RCWA](https://img.shields.io/badge/RCWA-S4%20Required-1f9d55)](#-前置条件)
+[![PyTorch](https://img.shields.io/badge/Framework-PyTorch-EE4C2C?logo=pytorch&logoColor=white)](#-训练与评估)
+[![License](https://img.shields.io/badge/License-Not%20Specified-lightgrey)](#-许可证)
 
-</div>
+这是一个以脚本为核心的研究型代码库，用于 **C4 对称约束下的超表面逆向设计**。
+它整合了：
 
-这是一个面向**反向超表面设计**的研究型工作区，基于 **S4/RCWA 仿真**与**多阶段神经网络模型**。
+- 🔬 S4/RCWA 仿真（`.lua` + Bash 启动脚本）
+- 🧱 从原始光谱与形状顶点出发的数据合并与预处理
+- 🧠 三阶段 PyTorch 训练（`shape -> spectra`、`spectra -> shape`、链式微调）
+- 📊 评估与绘图（包含神经网络结果与 S4 结果一致性检查）
 
-它支持：
-- 面向 C4 对称多边形超表面的高吞吐 S4 数据生成。
-- 数据合并与预处理，输出可直接用于训练的 NPZ。
-- 三阶段学习：**shape -> spectrum**、**spectrum -> shape**、**chain-tuned spectrum -> shape -> spectrum**。
-- 模型评估，以及可选的直接**neural-vs-S4**对比。
+## 📌 目录
 
-## 🌟 概览
+- [项目范围](#-项目范围)
+- [研究背景](#-研究背景)
+- [仓库结构](#️-仓库结构)
+- [前置条件](#-前置条件)
+- [环境配置](#️-环境配置)
+- [快速开始](#-快速开始)
+- [端到端流程](#-端到端流程)
+- [训练与评估](#-训练与评估)
+- [关键 CLI 参数](#️-关键-cli-参数)
+- [故障排查](#-故障排查)
+- [路线图](#-路线图)
+- [引用](#-引用)
+- [许可证](#-许可证)
 
-| 模块 | 本仓库提供内容 |
+## 🎯 项目范围
+
+该仓库以实验驱动为主，围绕可执行脚本组织（并非打包后的库）。
+当前最稳定的工作流为：
+
+1. 运行 S4，在 `results/` 中生成原始光学输出，并在 `shapes/` 中生成形状
+2. 将每次运行的 CSV 合并并透视，整理为可训练的表格数据
+3. 将合并后的 CSV 转换为压缩 `.npz`
+4. 训练三阶段透射率管线
+5. 评估 checkpoint 并导出图表/指标
+
+## 🧪 研究背景
+
+### 问题设定
+
+核心逆向设计任务是在 C4 对称约束和部分结晶扫描条件下，从目标透射光谱恢复超表面几何（反向亦成立）。
+
+### 透射率管线中的数据假设
+
+| 项目 | 数值 |
 |---|---|
-| 物理仿真 | Bash + Lua 脚本，支持在 `nQ=1..4` 上并行运行 S4 |
-| 数据集工具 | 合并脚本，附加多边形顶点并透视光谱枢轴化 |
-| 机器学习流程 | `three_stage_transmittance.py`，含 preprocess + train 两种模式 |
-| 评估 | `three_stage_transmittance_evaluation.py`，提供指标与图像 |
-| 研究分支 | AVIRIS/hyperspectral 与 noise/compression 实验 |
+| 每个形状的结晶状态数 | 11（`c` 从 `0.0` 到 `1.0`） |
+| 每个状态的光谱 bin 数 | 100 |
+| 每个样本的光谱张量 | `11 x 100` |
+| 每个样本的形状张量 | `4 x 3`（`[presence, x, y]`） |
 
-## 🧠 研究背景
+### 三阶段学习目标
 
-本仓库聚焦光子超表面的反向设计：根据目标光谱推断几何结构（以及反向过程）。
+| 阶段 | 方向 | 典型 checkpoint |
+|---|---|---|
+| A | `shape -> spectrum` | `stageA/shape2spec_stageA.pt` |
+| B | `spectrum -> shape` | `stageB/spec2shape_stageB.pt` |
+| C | `spectrum -> shape -> spectrum`（链式微调） | `stageC/spec2shape_stageC.pt` |
 
-基线流程采用的核心假设：
-- 通过 Q1 点参数化施加 C4 对称。
-- 11 个结晶状态（`c` 取值在 `[0.0, 1.0]`）。
-- 每个样本光谱以 `11 x 100` 透射率行存储。
-- 形状表示为最多 4 个 Q1 点（`4 x 3` 张量：presence, x, y）。
-
-三阶段训练逻辑：
-1. **Stage A**: shape -> spectrum (`shape2spec_stageA.pt`)
-2. **Stage B**: spectrum -> shape (`spec2shape_stageB.pt`)
-3. **Stage C**: spectrum -> shape -> spectrum 链式微调 (`spec2shape_stageC.pt`)
-
-## 🗂 项目结构
+## 🗂️ 仓库结构
 
 ```text
-iccp_test/
-├─ ms.sh / ms_final.sh / ms_resume_allargs.sh / ms_resume_random_state.sh
-├─ metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
-├─ merge.py / merge_s4_data_full.py / merge_s4_data_local.py
-├─ three_stage_transmittance.py
-├─ three_stage_transmittance_evaluation.py
-├─ shape2filter_with_s4.py
-├─ FilterShapeS4_Evaluator_Transmittance.py
-├─ filter2shape2filter_pipeline.py
-├─ partial_crys_data/                # 按结晶度划分的光学常数
-├─ results/                          # 原始 S4 输出（通常不纳入版本控制）
-├─ shapes/                           # 生成的多边形顶点文件
-├─ merged_csvs/                      # 用于预处理的合并表
-├─ outputs_three_stage_*/            # 每次运行的模型产物
-├─ AVIRIS*/ + aviris_*.py            # 高光谱分支
-├─ how_to_run.md / commands*.md
-├─ iccp.yaml
-└─ pip_requirements.txt
+.
+├── ms.sh / ms_final.sh / ms_resume_allargs.sh
+├── metasurface_seed.lua / metasurface_final.lua / metasurface_allargs_resume.lua
+├── merge.py / merge_s4_data_full.py / merge_s4_data_local.py / merge_robust.py
+├── three_stage_transmittance.py
+├── three_stage_transmittance_evaluation.py
+├── FilterShapeS4_Evaluator_Transmittance.py
+├── partial_crys_data/
+├── results/                          # raw S4 outputs
+├── shapes/                           # generated polygon vertices
+├── outputs_three_stage_*/            # checkpoints + training artifacts
+├── AVIRIS*/ and aviris_*.py          # related hyperspectral experiments
+├── commands.md / how_to_run.md
+├── iccp.yaml
+└── pip_requirements.txt
 ```
 
-## ✅ 前置要求
+## 🧩 前置条件
 
-| 要求 | 说明 |
+| 依赖项 | 说明 |
 |---|---|
-| 操作系统 | Linux（脚本默认 Bash + Linux 路径） |
-| Python | 3.9（见 `iccp.yaml`） |
-| 环境管理器 | 推荐 Conda |
-| S4 可执行文件 | 预期路径：仓库根目录相对路径 `../build/S4` |
-| GPU（可选） | CUDA 可加速训练/评估 |
+| Linux + Bash | Shell 脚本默认使用 Linux 风格路径 |
+| Conda | 推荐用于环境管理（`iccp.yaml`） |
+| Python 3.9 | 训练/评估脚本的主要运行时 |
+| S4 binary | 预期路径为仓库根目录相对路径 `../build/S4` |
+| CUDA（可选） | 可加速训练与评估 |
 
-## ⚙️ 安装
-
-### 1) 克隆并进入目录
+## ⚙️ 环境配置
 
 ```bash
-git clone <your-repo-url> inverse_metasurface
+git clone <repo-url> inverse_metasurface
 cd inverse_metasurface
-```
 
-### 2) 创建环境
-
-```bash
 conda env create -f iccp.yaml
 conda activate iccp
-```
 
-### 3) 验证 S4 路径
-
-```bash
+# verify S4 path expected by shell runners
 ls -l ../build/S4
 ```
 
-如果该路径不存在，请在该位置构建/放置 S4，或相应调整脚本中的路径。
-
-## 🚀 快速开始（端到端）
+可选：为 Shell 启动脚本添加可执行权限：
 
 ```bash
-# 1) 生成 S4 数据
-./ms.sh -ns 10000 -r 12345
+chmod +x ms.sh ms_final.sh ms_resume_allargs.sh ms_resume.sh
+```
 
-# 2) 按 prefix 合并一次运行结果
-python merge.py --prefix 20250123_155420
+## 🚀 快速开始
 
-# 3) 将合并后的 CSV 移动到预处理目录
-mkdir -p merged_csvs
-mv merged_s4_shapes_20250123_155420.csv merged_csvs/
+如果你已经有 `preprocessed_t_data.npz`：
 
-# 4) 预处理为 NPZ
-python three_stage_transmittance.py --preprocess \
-  --input_folder merged_csvs \
-  --output_npz preprocessed_t_data.npz
-
-# 5) 训练三阶段模型
+```bash
 python three_stage_transmittance.py \
   --data_npz preprocessed_t_data.npz \
   --num_epochs 100 \
   --batch_size 1024
 
-# 6) 评估模型输出
 python three_stage_transmittance_evaluation.py \
   --model_dir outputs_three_stage_YYYYMMDD_HHMMSS \
   --data_npz preprocessed_t_data.npz \
   --sample_count 8
 ```
 
-## 🧪 使用细节
+## 🔁 端到端流程
 
-### A) S4 数据生成
-
-最小化种子运行：
-
-```bash
-./ms.sh -ns 10000 -r 88888
-```
-
-参数化运行：
+### 1) 生成 S4 数据
 
 ```bash
 ./ms_final.sh \
-  -ns 100000 \
-  -r 88888 \
-  -p iccpOv100kG80 \
+  -ns 10000 \
+  -r 12345 \
+  -p myrun \
   -g 80 \
   -bo 0.35 \
   -ro 0.30
 ```
 
-续跑模式：
+### 2) 合并 S4 输出与形状顶点
 
 ```bash
-./ms_resume_allargs.sh \
-  -ns 100000 \
-  -r 88888 \
-  -p iccpOv100kG80 \
-  -g 80 \
-  -bo 0.35 \
-  -ro 0.30
+python merge_s4_data_full.py --prefix myrun
+# -> merged_s4_shapes_myrun.csv
 ```
 
-### B) 合并原始 S4 CSV
+### 3) 为预处理规范化 CSV 列名
+
+`three_stage_transmittance.py` 的预处理期望使用 `prefix` 与 `nQ`，而合并输出中可能是 `folder_key` 与 `NQ`。
 
 ```bash
-python merge.py --prefix 20250123_155420
+python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
 ```
 
-可选工具：
+### 4) CSV -> NPZ 预处理
 
 ```bash
-python merge_s4_data_full.py --prefix 20250123_155420
-```
+mkdir -p merged_csvs
+mv merged_s4_shapes_myrun.csv merged_csvs/
 
-### C) 预处理合并后的 CSV -> NPZ
-
-```bash
 python three_stage_transmittance.py --preprocess \
   --input_folder merged_csvs \
   --output_npz preprocessed_t_data.npz
 ```
 
-### D) 训练
+### 5) 训练三阶段模型
 
 ```bash
 python three_stage_transmittance.py \
@@ -196,12 +195,7 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-训练输出存放于：
-- `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
-- `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
-- `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
-
-### E) 评估
+### 6) 评估与绘图
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -210,13 +204,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-将生成：
-- `evaluation_metrics.csv`
-- `metrics_summary.csv`
-- 阶段可视化（`.png`, `.pdf`）
-- 训练曲线图
-
-### F) Neural vs direct S4 对比（可选）
+### 7) 可选：神经网络与 S4 对比
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -226,82 +214,96 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## 🔧 关键 CLI 选项
+## 🧠 训练与评估
 
-### S4 运行参数（`ms_final.sh`, `ms_resume_allargs.sh`）
+### 主要脚本
 
-| Flag | 含义 | 默认值 |
+| 脚本 | 用途 |
+|---|---|
+| `three_stage_transmittance.py` | 预处理 + 训练 A/B/C 三阶段 |
+| `three_stage_transmittance_evaluation.py` | 评估 checkpoint、计算指标并保存图表 |
+| `FilterShapeS4_Evaluator_Transmittance.py` | 对比学习模型预测与 S4 行为 |
+
+### 典型输出
+
+| 产物 | 位置 |
+|---|---|
+| 阶段 checkpoint | `outputs_three_stage_*/stageA|stageB|stageC/` |
+| 评估图像 | `outputs_three_stage_*/evaluation_<timestamp>/` |
+| 指标 CSV | `evaluation_metrics.csv`, `metrics_summary.csv` |
+
+## 🛠️ 关键 CLI 参数
+
+### S4 启动脚本（`ms_final.sh`, `ms_resume_allargs.sh`）
+
+| 参数 | 含义 | 默认值 |
 |---|---|---|
 | `-ns`, `--numshapes` | 形状数量 | `100000` |
 | `-r`, `--seed` | 随机种子 | `88888` |
-| `-p`, `--prefix` | 运行前缀 / 续跑键 | empty |
-| `-g`, `--numg` | 几何/基参数 | `80` |
+| `-p`, `--prefix` | 运行前缀/断点续跑键 | 空 |
+| `-g`, `--numg` | 几何基设置 | `80` |
 | `-bo`, `--baseouter` | 外轮廓基准偏移 | `0.25` |
 | `-ro`, `--randouter` | 外轮廓随机偏移 | `0.20` |
 
-### 训练参数（`three_stage_transmittance.py`）
+### 训练（`three_stage_transmittance.py`）
 
-| Flag | 含义 | 默认值 |
+| 参数 | 含义 | 默认值 |
 |---|---|---|
-| `--preprocess` | 运行预处理模式 | off |
-| `--input_folder` | 输入 CSV 目录 | empty |
-| `--output_npz` | 输出 NPZ 路径 | `preprocessed_data.npz` |
-| `--data_npz` | 训练/评估使用的 NPZ | empty |
-| `--csv_file` | 直接使用的 CSV | empty |
-| `--num_epochs` | 每阶段 Epoch 数 | `10` |
+| `--preprocess` | 切换到预处理模式 | 关闭 |
+| `--input_folder` | 包含合并 CSV 的文件夹 | `""` |
+| `--output_npz` | 预处理输出文件 | `preprocessed_data.npz` |
+| `--data_npz` | 训练使用的 NPZ 输入 | `""` |
+| `--csv_file` | 直接使用 CSV 训练输入 | `""` |
+| `--test` | 测试模式开关 | 关闭 |
+| `--num_epochs` | 每阶段 epoch 数 | `10` |
 | `--batch_size` | 批大小 | `4096` |
-| `--test` | 测试模式占位项 | off |
 
-### 评估参数（`three_stage_transmittance_evaluation.py`）
+### 评估（`three_stage_transmittance_evaluation.py`）
 
-| Flag | 含义 | 默认值 |
+| 参数 | 含义 | 默认值 |
 |---|---|---|
-| `--model_dir` | 训练结果根目录 | required |
-| `--data_npz` | 评估 NPZ | empty |
-| `--csv_file` | 评估 CSV | empty |
-| `--output_dir` | 输出目录 | `model_dir/evaluation_<timestamp>` |
+| `--model_dir` | 已训练运行目录（必填） | - |
+| `--data_npz` | 评估使用的 NPZ 输入 | `""` |
+| `--csv_file` | 评估使用的 CSV 输入 | `""` |
+| `--output_dir` | 自定义输出目录 | 自动 |
 | `--sample_count` | 可视化样本数量 | `4` |
-| `--seed` | 采样种子 | `23` |
-| `--font_scale` | 绘图字体缩放 | `1.0` |
-| `--batch_size` | 评估批大小 | `32` |
-| `--plot_only` | 仅绘制曲线 | off |
+| `--seed` | 样本选择随机种子 | `23` |
+| `--font_scale` | 绘图字体缩放倍数 | `1.0` |
+| `--batch_size` | 评估 dataloader 批大小 | `32` |
+| `--plot_only` | 仅重新生成图表 | 关闭 |
 
-## 🧭 故障排查
+## 🧯 故障排查
 
-| 现象 | 可能原因 | 解决方法 |
+| 现象 | 常见原因 | 解决方式 |
 |---|---|---|
-| `../build/S4: No such file or directory` | S4 可执行文件路径不匹配 | 在 `../build/S4` 构建/放置 S4，或修改脚本 |
-| `Must specify either --data_npz or --csv_file` | 缺少数据集来源 | 显式传入其中一个参数 |
-| `No matching CSVs found in 'results/'` | prefix 不匹配 | 检查 prefix 与输出命名 |
-| 预处理后记录极少或为 0 | 缺失/无效的 `T@...` 或 `vertices_str` 行 | 校验合并后 CSV 的 schema 与按形状分组行完整性 |
-| CUDA OOM | batch 过大 | 下调 `--batch_size`（例如 `1024 -> 256`） |
+| `../build/S4: No such file or directory` | S4 二进制不在预期相对路径 | 将 S4 放置/编译到 `../build/S4`，或修改脚本路径 |
+| `Must specify either --data_npz or --csv_file` | 缺少训练/评估数据集参数 | 严格提供且仅提供一个数据输入 |
+| `No transmission columns found` | 合并 CSV 缺少 `T@...` 列 | 重新运行 merge/pivot 并检查表头 |
+| 预处理阶段 `KeyError: 'prefix'` | 合并输出仍使用 `folder_key`/`NQ` | 预处理前先重命名为 `prefix`/`nQ` |
+| GPU OOM | batch 过大 | 降低 `--batch_size` |
+| 评估时缺少 checkpoint | 阶段 checkpoint 缺失或路径错误 | 检查 `--model_dir` 下 stageA/B/C 文件是否齐全 |
 
-## 🧱 开发说明
+## 🧭 路线图
 
-- 这是一个偏实验驱动的仓库；许多生成产物有意不纳入版本控制。
-- 同类任务存在多个脚本变体（`merge_*`, `aviris_*`, `noise_experiment_*`）。
-- 本 README 记录的是基线 inverse-metasurface 工作流。
-- 训练脚本会设定种子（`42`），但严格确定性仍依赖硬件/后端行为。
-- 目前尚无统一 CI + 完整自动化测试套件。
+- 统一各 merge 脚本的合并 CSV schema（`prefix`、`nQ` 命名）
+- 为 merge/preprocess/checkpoint 加载添加自动化测试
+- 提供单一 CLI 入口，编排完整流程
+- 添加数据集/运行清单以增强可复现性
+- 增加明确的开源许可证
 
-## 🛣 路线图
+## 📚 引用
 
-- 增加一个紧凑的规范数据集，用于快速 smoke test。
-- 合并重复的 pipeline 脚本。
-- 增加 merge/preprocess 完整性与 checkpoint 可加载性检查。
-- 增加 CI（lint + smoke train/eval）。
-- 更明确地记录 S4 的构建/版本固定方式。
+如果该仓库对你的研究有帮助，请引用：
 
-## 🤝 贡献
-
-1. 创建功能分支。
-2. 保持 PR 范围聚焦（每个 PR 聚焦一个 pipeline/实验问题）。
-3. 提供可直接运行的准确命令与预期输出路径。
-4. 非必要不要提交体积较大的生成产物。
-5. 添加可复现说明（seed、数据来源、checkpoint 路径）。
+```bibtex
+@article{chen2025inverse,
+  title={Inverse Design of Metasurface for Spectral Imaging},
+  author={Chen, Rongzhou and Nie, Haitao and Zhu, Shuo and Zhao, Yaping and Wang, Chutian and Lam, Edmund Y},
+  journal={arXiv preprint arXiv:2510.21924},
+  year={2025}
+}
+```
 
 ## 📄 许可证
 
-本仓库当前不存在 `LICENSE` 文件。
-
-在添加许可证文件之前，代码复用与再分发条款应视为**未确定**。
+当前仓库中尚未包含 `LICENSE` 文件，因此在添加许可证前，使用与再分发权限均未明确。
