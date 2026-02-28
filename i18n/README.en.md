@@ -1,5 +1,16 @@
-[English](README.md) · [العربية](i18n/README.ar.md) · [Español](i18n/README.es.md) · [Français](i18n/README.fr.md) · [日本語](i18n/README.ja.md) · [한국어](i18n/README.ko.md) · [Tiếng Việt](i18n/README.vi.md) · [中文 (简体)](i18n/README.zh-Hans.md) · [中文（繁體）](i18n/README.zh-Hant.md) · [Deutsch](i18n/README.de.md) · [Русский](i18n/README.ru.md)
-
+<p>
+  <a href="README.md">English</a>
+  · <a href="README.zh-TW.md">中文（繁體）</a>
+  · <a href="README.zh-CN.md">中文 (简体)</a>
+  · <a href="README.ja.md">日本語</a>
+  · <a href="README.ko.md">한국어</a>
+  · <a href="README.vi.md">Tiếng Việt</a>
+  · <a href="README.ar.md">العربية</a>
+  · <a href="README.fr.md">Français</a>
+  · <a href="README.es.md">Español</a>
+  · <a href="README.de.md">Deutsch</a>
+  · <a href="README.ru.md">Русский</a>
+</p>
 
 # Inverse Design of Metasurface for Spectral Imaging
 
@@ -7,41 +18,16 @@
   <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b?style=for-the-badge">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.9-3776AB?style=for-the-badge&logo=python&logoColor=white">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white">
-  <img alt="Simulator" src="https://img.shields.io/badge/Simulator-S4%20RCWA-16a34a?style=for-the-badge">
+  <img alt="RCWA" src="https://img.shields.io/badge/Simulator-S4%20RCWA-16a34a?style=for-the-badge">
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%20%2B%20Bash-6b7280?style=for-the-badge&logo=gnu-bash&logoColor=white">
-  <img alt="ArXiv" src="https://img.shields.io/badge/arXiv-2510.21924-b31b1b?style=for-the-badge&logo=arxiv&logoColor=white">
 </p>
 
-A script-first research repository (historically referred to as `inverse_metasurface`) for inverse metasurface design in spectral imaging.
+A script-first research repository (historically referred to as `inverse_metasurface`) for inverse metasurface design in spectral imaging. The core workflow couples:
 
-The core workflow couples:
-- Physics-grounded RCWA simulation (`S4` + Lua)
-- Data assembly and shape attachment
-- Three-stage PyTorch learning (`shape -> spectrum`, `spectrum -> shape`, chained fine-tuning)
-- Quantitative and qualitative evaluation, with optional neural-vs-S4 consistency checks
-
-> [!IMPORTANT]
-> Canonical behavior and commands are preserved from the existing project scripts/docs. Where historical references point to absent files, those references are intentionally kept with explicit notes for compatibility.
-
-## 📑 Contents
-
-- [✨ At a Glance](#-at-a-glance)
-- [🌍 Internationalization (i18n)](#-internationalization-i18n)
-- [✨ Features](#-features)
-- [🧭 End-to-End Workflow](#-end-to-end-workflow)
-- [🧱 Project Structure](#-project-structure)
-- [🛠️ Prerequisites](#️-prerequisites)
-- [🚀 Installation](#-installation)
-- [▶️ Usage](#️-usage)
-- [⚙️ Configuration](#️-configuration)
-- [🧪 Examples](#-examples)
-- [🔬 Research Context](#-research-context)
-- [🧑‍💻 Development Notes](#-development-notes)
-- [🧯 Troubleshooting](#-troubleshooting)
-- [🗺️ Roadmap](#️-roadmap)
-- [🤝 Contribution](#-contribution)
-- [📄 License](#-license)
-- [📚 Citation](#-citation)
+- physics-grounded RCWA simulation (S4 + Lua)
+- data assembly and shape attachment
+- three-stage PyTorch learning (`shape -> spectrum`, `spectrum -> shape`, chained fine-tuning)
+- quantitative and qualitative evaluation, with optional neural-vs-S4 consistency checks
 
 ## ✨ At a Glance
 
@@ -50,25 +36,8 @@ The core workflow couples:
 | 🎯 Main task | Infer C4-symmetric metasurface geometry from target transmittance spectra |
 | 🔬 Simulator | `../build/S4` called by shell launchers and `.lua` scripts |
 | 🧠 Learning pipeline | Stage A `shape -> spectra`, Stage B `spectra -> shape`, Stage C `spectra -> shape -> spectra` |
-| 📦 Data contract | Merged CSV (`T@...`, metadata, `vertices_str`) -> compressed NPZ (`uids`, `spectra`, `shapes`) |
+| 📦 Data contract | merged CSV (`T@...`, metadata, `vertices_str`) -> compressed NPZ (`uids`, `spectra`, `shapes`) |
 | 🧪 Evaluation | MSE metrics, stage visualizations, optional fresh S4 re-simulation |
-| 🌐 i18n status | Root-level multilingual README files + existing `i18n/` directory |
-
-## 🌍 Internationalization (i18n)
-
-- Multilingual READMEs are maintained at repository root as `README.<lang>.md` files.
-- `i18n/` directory exists in this repository snapshot.
-- This file keeps a single language-options line at the top to avoid duplicated language bars.
-- `README.en.md` also exists in the repo; this `README.md` remains the canonical base for this update pass.
-
-## ✨ Features
-
-- End-to-end inverse-design path from S4 simulation output to trained inverse model.
-- C4-symmetric polygon parameterization and Q1-point encoding (`4x3`: `presence, x, y`).
-- Three-stage model training in one script (`three_stage_transmittance.py`).
-- Merge tooling that preserves spectral precision and attaches per-shape vertices.
-- Optional evaluator that compares learned predictions with fresh S4 simulation.
-- Extensive exploratory branches (AVIRIS, SWIR/noise, GSST, archived/deprecated variants).
 
 ## 🧭 End-to-End Workflow
 
@@ -80,53 +49,43 @@ The core workflow couples:
 6. Evaluate checkpoints and visualize behavior.
 7. Optionally compare predicted-shape spectra against new S4 runs.
 
-## 🧱 Project Structure
+## 🧱 Repository Layout
 
 ```text
 .
 ├── README.md
-├── README.<lang>.md
 ├── how_to_run.md
 ├── commands.md
-├── commands_updated.md
 ├── iccp.yaml
+├── pip_requirements.txt
 │
 ├── ms.sh
 ├── ms_final.sh
 ├── ms_resume.sh
 ├── ms_resume_allargs.sh
 ├── ms_resume_random_state.sh
-├── ms_resume_random_state_nir.sh
 │
 ├── metasurface_seed.lua
 ├── metasurface_final.lua
 ├── metasurface_seed_resume.lua
 ├── metasurface_allargs_resume.lua
 ├── metasurface_resume_random_state.lua
-├── metasurface_resume_random_state_nir.lua
 ├── metasurface_fixed_shape_and_c_value.lua
-├── metasurface_unique_shape.lua
-├── metasurface_gsst_nir.lua
-├── run_prediction.lua
 │
 ├── merge_s4_data_full.py
 ├── three_stage_transmittance.py
+├── three_stage_transmittance_evaluation.py
 ├── FilterShapeS4_Evaluator_Transmittance.py
-├── FilterShapeS4_Evaluator_Transmittance_Five_Rows.py
-├── FilterShapeS4_Evaluator_Transmittance_Five_Rows_Inferno.py
 │
+├── partial_crys_data/
+├── results/
 ├── shapes/
-├── gsst_partial_crys_data/
+├── merged_csvs/
 ├── outputs_three_stage_*/
-├── blind_noise_experiment_all_*/
-├── FilterShapeS4_Evaluator_Transmittance_*/
-├── AVIRIS / aviris_*.py
-├── noise_experiment*.py
-├── archived/
-├── deprecated/
-├── deprecated-part2/
-├── deprecated-scripts/
-└── deprecated_code/
+│
+├── AVIRIS*/
+├── noise_experiment*/
+└── archived/
 ```
 
 ## 🛠️ Prerequisites
@@ -134,12 +93,12 @@ The core workflow couples:
 | Dependency | Notes |
 |---|---|
 | Linux + Bash | Launcher scripts target shell execution |
-| Python 3.9 | Matches `iccp.yaml` (`python=3.9.18`) |
+| Python 3.9 | Matches `iccp.yaml` |
 | Conda | Recommended for reproducibility |
 | S4 binary | Expected at `../build/S4` |
 | CUDA GPU (optional) | Speeds up training/evaluation |
 
-## 🚀 Installation
+## 🚀 Setup
 
 ### 1) Clone and enter
 
@@ -155,10 +114,9 @@ conda env create -f iccp.yaml
 conda activate iccp
 ```
 
-Alternative note:
+Alternative (less controlled):
 
 ```bash
-# Historical README reference (file may be absent in this snapshot)
 pip install -r pip_requirements.txt
 ```
 
@@ -171,10 +129,10 @@ ls -l ../build/S4
 ### 4) (Optional) make launchers executable
 
 ```bash
-chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_state.sh ms_resume_random_state_nir.sh
+chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_state.sh
 ```
 
-## ▶️ Usage
+## ▶️ Practical Usage
 
 ### A) Generate RCWA simulation data
 
@@ -206,18 +164,6 @@ Resume-oriented launcher:
   -g 80 \
   -bo 0.35 \
   -ro 0.30
-```
-
-Additional resume/random-state example (from command docs):
-
-```bash
-./ms_resume_random_state.sh \
-  -p iccp100kG20Ov \
-  -r 88888 \
-  -g 20 \
-  -bo 0.35 \
-  -ro 0.3 \
-  -ns 100000
 ```
 
 Notes:
@@ -267,16 +213,12 @@ Outputs are written to:
 
 ### F) Evaluate trained models
 
-Historical README command (script name retained for compatibility with prior docs):
-
 ```bash
 python three_stage_transmittance_evaluation.py \
   --model_dir outputs_three_stage_YYYYMMDD_HHMMSS \
   --data_npz preprocessed_t_data.npz \
   --sample_count 8
 ```
-
-Repository status note: `three_stage_transmittance_evaluation.py` is not present in this snapshot. Use `FilterShapeS4_Evaluator_Transmittance.py` for available evaluation functionality.
 
 ### G) Optional neural-vs-S4 consistency check
 
@@ -288,7 +230,7 @@ python FilterShapeS4_Evaluator_Transmittance.py \
   --n_samples 4
 ```
 
-## ⚙️ Configuration
+## ⚙️ Key CLI Options
 
 ### S4 launchers (`ms_final.sh`, `ms_resume_allargs.sh`)
 
@@ -314,7 +256,7 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--num_epochs` | Number of training epochs | `10` |
 | `--batch_size` | Batch size | `4096` |
 
-### Historical evaluation config (`three_stage_transmittance_evaluation.py`)
+### Evaluation (`three_stage_transmittance_evaluation.py`)
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -340,9 +282,7 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--max_workers` | S4 worker threads | `4` |
 | `--out_folder` | Output directory | auto timestamp |
 
-## 🧪 Examples
-
-### Smoke run
+## 🧪 Smoke Run
 
 ```bash
 ./ms_final.sh -ns 1000 -r 42 -p smoke -g 40 -bo 0.25 -ro 0.20
@@ -353,37 +293,16 @@ python three_stage_transmittance.py --preprocess --input_folder merged_csvs --ou
 python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_size 128
 ```
 
-### Run-profile examples (from `commands.md` / `commands_updated.md`)
-
-```bash
-# no overlap, G=40
-./ms_resume_allargs.sh -ns 10000 -r 12345 -p fast_without_overlap -g 40 -bo 0.25 -ro 0.2
-
-# overlap, G=80
-./ms_resume_allargs.sh -ns 10000 -r 12345 -p overlap -g 80 -bo 0.35 -ro 0.3
-
-# large run, overlap, G=80
-./ms_resume_allargs.sh -ns 100000 -r 12345 -p more_basis_overlap -g 80 -bo 0.35 -ro 0.3
-```
-
 ## 🔬 Research Context
 
 The current inverse-design setup learns to recover C4-symmetric geometry from transmittance across crystallization states. The transmittance pipeline currently assumes:
 
 - 11 crystallization rows per shape sample (grouped by unique `shape_uid`)
 - 100 wavelength bins per crystallization state (`T@...` columns)
-- Up to 4 Q1 control points encoded as a `4x3` tensor: `(presence, x, y)`
-- Polygon reconstruction under C4 symmetry for shape visualization and consistency checks
+- up to 4 Q1 control points encoded as a `4x3` tensor: `(presence, x, y)`
+- polygon reconstruction under C4 symmetry for shape visualization and consistency checks
 
 The repository also contains exploratory branches (`AVIRIS*`, `noise_experiment*`, `archived/`) beyond the primary transmittance training path.
-
-## 🧑‍💻 Development Notes
-
-- This is a script-centric research repository rather than a packaged Python module.
-- Core scripts assume relative paths (especially `../build/S4`, `results/`, `shapes/`).
-- `.gitignore` excludes many generated experiment artifacts (`*.csv`, `*.npz`, `*.pt`, run folders).
-- Some files/directories in historical docs are currently absent in this snapshot; these references are intentionally preserved with notes for compatibility.
-- macOS sidecar files (`._*`) are present and may be non-functional metadata artifacts.
 
 ## 🧯 Troubleshooting
 
@@ -395,15 +314,6 @@ The repository also contains exploratory branches (`AVIRIS*`, `noise_experiment*
 | `No valid shapes => SHIFT->Q1->UpTo4` | Invalid/empty `vertices_str` or Q1 filtering removes all samples | Validate shape files and merge output |
 | Empty merge output for `--prefix` | Prefix does not match files in `results/` | Check exact filename prefix and rerun merge |
 | Evaluation checkpoint missing | Missing `stageA/B/C` checkpoint files | Verify `--model_dir` points to complete output folder |
-| `three_stage_transmittance_evaluation.py` not found | Script referenced by historical docs but absent now | Use `FilterShapeS4_Evaluator_Transmittance.py` or restore that script from prior commits |
-
-## 🗺️ Roadmap
-
-- Improve reproducibility with an explicit data-versioning manifest and pinned run configs.
-- Consolidate canonical entry points for transmittance, AVIRIS, and noise branches.
-- Add automated smoke tests for preprocessing and one mini training epoch.
-- Add clearer experiment registry linking output folders to exact command lines.
-- Expand multilingual README synchronization workflow (root language files and `i18n/`).
 
 ## 🤝 Contribution
 
