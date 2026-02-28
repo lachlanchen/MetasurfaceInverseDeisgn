@@ -1,7 +1,9 @@
 [English](../README.md) · [العربية](README.ar.md) · [Español](README.es.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Tiếng Việt](README.vi.md) · [中文 (简体)](README.zh-Hans.md) · [中文（繁體）](README.zh-Hant.md) · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
 
-# Diseño Inverso de Metasuperficies para Imagen Espectral
+[![LazyingArt banner](https://github.com/lachlanchen/lachlanchen/raw/main/figs/banner.png)](https://github.com/lachlanchen/lachlanchen/blob/main/figs/banner.png)
+
+# Diseño inverso de metasuperficies para imagen espectral
 
 <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b?style=for-the-badge">
@@ -25,7 +27,8 @@ El flujo de trabajo principal acopla:
 
 ## 📑 Contenidos
 
-- [✨ Vista general rápida](#-vista-general-rápida)
+- [🌟 Instantánea](#-instantánea)
+- [✨ A simple vista](#-a-simple-vista)
 - [🌍 Internacionalización (i18n)](#-internacionalización-i18n)
 - [✨ Características](#-características)
 - [🧭 Flujo de trabajo de extremo a extremo](#-flujo-de-trabajo-de-extremo-a-extremo)
@@ -43,42 +46,51 @@ El flujo de trabajo principal acopla:
 - [📄 Licencia](#-licencia)
 - [📚 Citación](#-citación)
 
-## ✨ Vista general rápida
+## 🌟 Instantánea
+
+| Enfoque | Estado |
+|---|---|
+| 🧠 Objetivo | Reconstrucción inversa de geometría de metasuperficie con simetría C4 a partir de datos espectrales |
+| 🔧 Pila central | S4 RCWA (`Lua`) + entrenamiento en PyTorch + revalidación opcional de geometría a espectro |
+| 🧪 Canal de datos | Combinación de CSV y asociación de formas → NPZ comprimido (`uids`, `spectra`, `shapes`) |
+| 🚀 Madurez | Prototipo de investigación; scripts y docs se mantienen compatibles con referencias históricas |
+
+## ✨ A simple vista
 
 | Elemento | Detalles |
 |---|---|
-| 🎯 Tarea principal | Inferir geometría de metasuperficie con simetría C4 a partir de espectros objetivo de transmitancia |
-| 🔬 Simulador | `../build/S4` invocado por lanzadores de shell y scripts `.lua` |
+| 🎯 Tarea principal | Inferir geometría de metasuperficie con simetría C4 a partir de espectros de transmitancia objetivo |
+| 🔬 Simulador | `../build/S4` llamado por lanzadores de shell y scripts `.lua` |
 | 🧠 Pipeline de aprendizaje | Etapa A `shape -> spectra`, Etapa B `spectra -> shape`, Etapa C `spectra -> shape -> spectra` |
 | 📦 Contrato de datos | CSV fusionado (`T@...`, metadatos, `vertices_str`) -> NPZ comprimido (`uids`, `spectra`, `shapes`) |
 | 🧪 Evaluación | Métricas MSE, visualizaciones por etapa, re-simulación S4 opcional |
-| 🌐 Estado de i18n | README multilingüe en la raíz + directorio `i18n/` existente |
+| 🌐 Estado de i18n | Archivos README multilingües en la raíz + directorio `i18n/` existente |
 
 ## 🌍 Internacionalización (i18n)
 
 - Los README multilingües se mantienen en la raíz del repositorio como archivos `README.<lang>.md`.
 - El directorio `i18n/` existe en esta instantánea del repositorio.
-- Este archivo mantiene una única línea de opciones de idioma en la parte superior para evitar barras de idioma duplicadas.
-- `README.en.md` también existe en el repositorio; este `README.md` sigue siendo la base canónica para esta pasada de actualización.
+- Este archivo mantiene una única línea de opciones de idioma al inicio para evitar barras de idioma duplicadas.
+- También existe `README.en.md` en el repositorio; este `README.md` sigue siendo la base canónica para esta ronda de actualización.
 
 ## ✨ Características
 
-- Ruta completa de diseño inverso desde la salida de simulación S4 hasta el modelo inverso entrenado.
-- Parametrización de polígonos con simetría C4 y codificación de puntos Q1 (`4x3`: `presence, x, y`).
+- Ruta integral de diseño inverso desde la salida de simulación de S4 hasta el modelo inverso entrenado.
+- Parametrización poligonal con simetría C4 y codificación de puntos Q1 (`4x3`: `presence, x, y`).
 - Entrenamiento de modelos en tres etapas en un único script (`three_stage_transmittance.py`).
 - Herramientas de fusión que conservan la precisión espectral y adjuntan vértices por forma.
 - Evaluador opcional que compara predicciones aprendidas con simulación S4 nueva.
-- Amplias ramas exploratorias (AVIRIS, SWIR/ruido, GSST, variantes archivadas/obsoletas).
+- Ramas exploratorias extensas (AVIRIS, SWIR/ruido, GSST, variantes archivadas/obsoletas).
 
 ## 🧭 Flujo de trabajo de extremo a extremo
 
-1. Generar salidas de simulación en `results/` y archivos de polígonos en `shapes/`.
-2. Fusionar archivos CSV de S4 y adjuntar vértices de forma.
+1. Generar salidas de simulación en `results/` y archivos poligonales en `shapes/`.
+2. Fusionar los CSV de S4 y asociar los vértices de forma.
 3. Normalizar nombres de columnas fusionadas para compatibilidad con entrenamiento.
-4. Preprocesar CSV fusionados a tensores NPZ.
-5. Entrenar modelos de las etapas A/B/C.
+4. Preprocesar CSV fusionados en tensores NPZ.
+5. Entrenar los modelos de las etapas A/B/C.
 6. Evaluar checkpoints y visualizar comportamiento.
-7. Opcionalmente comparar espectros de forma predicha frente a nuevas ejecuciones de S4.
+7. Opcionalmente comparar espectros de forma predicha contra nuevas corridas de S4.
 
 ## 🧱 Estructura del proyecto
 
@@ -133,17 +145,18 @@ El flujo de trabajo principal acopla:
 
 | Dependencia | Notas |
 |---|---|
-| Linux + Bash | Los scripts lanzadores apuntan a ejecución en shell |
+| Linux + Bash | Los lanzadores apuntan a ejecución por shell |
 | Python 3.9 | Coincide con `iccp.yaml` (`python=3.9.18`) |
 | Conda | Recomendado para reproducibilidad |
-| Binario S4 | Se espera en `../build/S4` |
-| GPU CUDA (opcional) | Acelera entrenamiento/evaluación |
+| Binario S4 | Esperado en `../build/S4` |
+| GPU CUDA (opcional) | Acelera entrenamiento y evaluación |
 
 ## 🚀 Instalación
 
 ### 1) Clonar y entrar
 
 ```bash
+
 git clone <your-repo-url> inverse_metasurface
 cd inverse_metasurface
 ```
@@ -158,7 +171,7 @@ conda activate iccp
 Nota alternativa:
 
 ```bash
-# Historical README reference (file may be absent in this snapshot)
+# Referencia histórica de README (el archivo puede no existir en esta instantánea)
 pip install -r pip_requirements.txt
 ```
 
@@ -251,7 +264,7 @@ python three_stage_transmittance.py \
   --output_npz preprocessed_t_data.npz
 ```
 
-### E) Entrenar Etapas A/B/C
+### E) Entrenar etapas A/B/C
 
 ```bash
 python three_stage_transmittance.py \
@@ -267,7 +280,7 @@ Las salidas se escriben en:
 
 ### F) Evaluar modelos entrenados
 
-Comando del README histórico (el nombre del script se conserva por compatibilidad con documentación previa):
+Comando histórico de README (el nombre del script se mantiene por compatibilidad con documentación previa):
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -276,7 +289,7 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-Nota sobre el estado del repositorio: `three_stage_transmittance_evaluation.py` no está presente en esta instantánea. Use `FilterShapeS4_Evaluator_Transmittance.py` para la funcionalidad de evaluación disponible.
+Nota de estado del repositorio: `three_stage_transmittance_evaluation.py` no está presente en esta instantánea. Use `FilterShapeS4_Evaluator_Transmittance.py` para la funcionalidad de evaluación disponible.
 
 ### G) Comprobación opcional de consistencia red neuronal vs S4
 
@@ -297,19 +310,19 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `-ns`, `--numshapes` | Número de formas a generar | `100000` |
 | `-r`, `--seed` | Semilla aleatoria | `88888` |
 | `-p`, `--prefix` | Prefijo/clave de reanudación | `""` |
-| `-g`, `--numg` | Parámetro base/cuadrícula | `80` |
-| `-bo`, `--baseouter` | Desplazamiento base del límite exterior | `0.25` |
-| `-ro`, `--randouter` | Desplazamiento aleatorio del límite exterior | `0.20` |
+| `-g`, `--numg` | Parámetro base/grella | `80` |
+| `-bo`, `--baseouter` | Desplazamiento base del borde exterior | `0.25` |
+| `-ro`, `--randouter` | Desplazamiento aleatorio del borde exterior | `0.20` |
 
 ### Entrenamiento (`three_stage_transmittance.py`)
 
 | Flag | Significado | Predeterminado |
 |---|---|---|
-| `--preprocess` | Ejecutar modo de preprocesamiento | `False` |
+| `--preprocess` | Ejecutar en modo preprocesamiento | `False` |
 | `--input_folder` | Carpeta que contiene CSV fusionados | `""` |
 | `--output_npz` | Ruta de salida NPZ | `preprocessed_data.npz` |
-| `--data_npz` | Conjunto NPZ para entrenamiento | `""` |
-| `--csv_file` | CSV alternativo si no se usa NPZ | `""` |
+| `--data_npz` | NPZ de entrada para entrenamiento | `""` |
+| `--csv_file` | Fallback de CSV si no se usa NPZ | `""` |
 | `--test` | Modo de prueba | `False` |
 | `--num_epochs` | Número de épocas de entrenamiento | `10` |
 | `--batch_size` | Tamaño de lote | `4096` |
@@ -319,14 +332,14 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | Flag | Significado | Predeterminado |
 |---|---|---|
 | `--model_dir` | Directorio que contiene `stageA/B/C` | required |
-| `--data_npz` | Entrada NPZ | `""` |
-| `--csv_file` | CSV alternativo de entrada | `""` |
-| `--output_dir` | Sobrescritura de directorio de salida | auto under `model_dir` |
+| `--data_npz` | NPZ de entrada | `""` |
+| `--csv_file` | Alternativa de entrada CSV | `""` |
+| `--output_dir` | Sobrescribir directorio de salida | auto bajo `model_dir` |
 | `--sample_count` | Número de muestras visualizadas | `4` |
 | `--seed` | Semilla aleatoria | `23` |
-| `--font_scale` | Escalado de fuente en gráficos | `1.0` |
-| `--batch_size` | Tamaño de lote para evaluación | `32` |
-| `--plot_only` | Solo graficar curvas de entrenamiento | `False` |
+| `--font_scale` | Escala de fuente de gráficos | `1.0` |
+| `--batch_size` | Tamaño de lote en evaluación | `32` |
+| `--plot_only` | Solo mostrar curvas de entrenamiento | `False` |
 
 ### Evaluador de consistencia S4 (`FilterShapeS4_Evaluator_Transmittance.py`)
 
@@ -338,7 +351,7 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--n_samples` | Número de muestras evaluadas | `4` |
 | `--seed` | Semilla aleatoria | `23` |
 | `--max_workers` | Hilos de trabajo S4 | `4` |
-| `--out_folder` | Directorio de salida | auto timestamp |
+| `--out_folder` | Directorio de salida | marca de tiempo automática |
 
 ## 🧪 Ejemplos
 
@@ -368,57 +381,57 @@ python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_
 
 ## 🔬 Contexto de investigación
 
-La configuración actual de diseño inverso aprende a recuperar geometría con simetría C4 a partir de la transmitancia en estados de cristalización. El pipeline de transmitancia actualmente asume:
+La configuración actual de diseño inverso aprende a recuperar geometría con simetría C4 a partir de la transmitancia en estados de cristalización. El pipeline de transmitancia asume actualmente:
 
 - 11 filas de cristalización por muestra de forma (agrupadas por `shape_uid` único)
-- 100 bins de longitud de onda por estado de cristalización (columnas `T@...`)
-- Hasta 4 puntos de control Q1 codificados como un tensor `4x3`: `(presence, x, y)`
-- Reconstrucción de polígonos bajo simetría C4 para visualización de formas y comprobaciones de consistencia
+- 100 intervalos de longitud de onda por estado de cristalización (`columnas T@...`)
+- Hasta 4 puntos de control Q1 codificados como tensor `4x3`: `(presence, x, y)`
+- Reconstrucción poligonal bajo simetría C4 para visualización de formas y comprobaciones de consistencia
 
-El repositorio también contiene ramas exploratorias (`AVIRIS*`, `noise_experiment*`, `archived/`) además de la ruta principal de entrenamiento de transmitancia.
+El repositorio también incluye ramas exploratorias (`AVIRIS*`, `noise_experiment*`, `archived/`) además de la ruta principal de entrenamiento de transmitancia.
 
 ## 🧑‍💻 Notas de desarrollo
 
-- Este es un repositorio de investigación centrado en scripts, no un módulo Python empaquetado.
-- Los scripts principales asumen rutas relativas (especialmente `../build/S4`, `results/`, `shapes/`).
-- `.gitignore` excluye muchos artefactos generados de experimentos (`*.csv`, `*.npz`, `*.pt`, carpetas de ejecución).
-- Algunos archivos/directorios en documentación histórica están ausentes en esta instantánea; estas referencias se conservan intencionalmente con notas por compatibilidad.
-- Archivos sidecar de macOS (`._*`) están presentes y pueden ser artefactos de metadatos no funcionales.
+- Este es un repositorio de investigación centrado en scripts, no un módulo de Python empaquetado.
+- Los scripts principales suponen rutas relativas (especialmente `../build/S4`, `results/`, `shapes/`).
+- `.gitignore` excluye muchos artefactos de experimentos generados (`*.csv`, `*.npz`, `*.pt`, directorios de ejecución).
+- Algunos archivos/directorios en documentación histórica están ausentes en esta instantánea; esas referencias se mantienen intencionalmente por compatibilidad.
+- Los archivos sidecar de macOS (`._*`) están presentes y pueden ser artefactos de metadatos no funcionales.
 
 ## 🧯 Solución de problemas
 
 | Síntoma | Causa probable | Solución |
 |---|---|---|
-| `../build/S4: No such file or directory` | Falta el binario S4 en la ruta relativa esperada | Compile o enlace S4 en `../build/S4`, o actualice rutas de lanzadores |
-| `No transmission columns found` | El CSV no contiene columnas `T@...` | Vuelva a revisar el formato de salida de fusión |
-| `Must specify either --data_npz or --csv_file` | Falta argumento de datos para entrenamiento/evaluación | Proporcione explícitamente una entrada |
-| `No valid shapes => SHIFT->Q1->UpTo4` | `vertices_str` inválido/vacío o el filtrado Q1 elimina todas las muestras | Valide archivos de forma y salida de fusión |
+| `../build/S4: No such file or directory` | Falta el binario S4 en la ruta relativa esperada | Compile o enlace S4 en `../build/S4`, o actualice las rutas de los lanzadores |
+| `No transmission columns found` | El CSV no incluye columnas `T@...` | Revise nuevamente el formato de salida de la fusión |
+| `Must specify either --data_npz or --csv_file` | Falta argumento de datos para entrenamiento/evaluación | Proporcione explícitamente un argumento |
+| `No valid shapes => SHIFT->Q1->UpTo4` | `vertices_str` inválido/vacío o filtrado Q1 que elimina todas las muestras | Valide los archivos de formas y el resultado de fusión |
 | Salida de fusión vacía para `--prefix` | El prefijo no coincide con archivos en `results/` | Verifique el prefijo exacto del nombre de archivo y vuelva a ejecutar la fusión |
-| Falta checkpoint de evaluación | Faltan archivos de checkpoint `stageA/B/C` | Verifique que `--model_dir` apunte a la carpeta de salida completa |
-| `three_stage_transmittance_evaluation.py` not found | Script referenciado por documentación histórica pero actualmente ausente | Use `FilterShapeS4_Evaluator_Transmittance.py` o restaure ese script desde commits anteriores |
+| Falta checkpoint de evaluación | Faltan archivos checkpoint de `stageA/B/C` | Compruebe que `--model_dir` apunte a una carpeta de salida completa |
+| `three_stage_transmittance_evaluation.py` not found | Script referido por documentación histórica pero ausente ahora | Use `FilterShapeS4_Evaluator_Transmittance.py` o restaure ese script desde commits anteriores |
 
 ## 🗺️ Hoja de ruta
 
-- Mejorar la reproducibilidad con un manifiesto explícito de versionado de datos y configuraciones de ejecución fijadas.
-- Consolidar puntos de entrada canónicos para ramas de transmitancia, AVIRIS y ruido.
-- Añadir pruebas smoke automatizadas para preprocesamiento y una mini época de entrenamiento.
-- Añadir un registro de experimentos más claro que vincule carpetas de salida con líneas de comando exactas.
+- Mejorar reproducibilidad con un manifiesto explícito de versionado de datos y configuraciones de ejecución fijadas.
+- Consolidar entradas canónicas para la ruta de transmitancia, AVIRIS y ruido.
+- Añadir pruebas smoke automatizadas para preprocesamiento y una miniépoca de entrenamiento.
+- Añadir un registro de experimentos más claro que vincule carpetas de salida con comandos exactos.
 - Ampliar el flujo de sincronización de README multilingüe (archivos de idioma en raíz y `i18n/`).
 
 ## 🤝 Contribución
 
-Se aceptan contribuciones, especialmente para reproducibilidad, pruebas y calidad de documentación.
+Se aceptan contribuciones, especialmente en reproducibilidad, pruebas y calidad documental.
 
 Proceso sugerido:
 
-1. Abra un issue con alcance y comportamiento esperado.
-2. Cree una rama enfocada.
+1. Abra una incidencia con el alcance y comportamiento esperado.
+2. Cree una rama específica.
 3. Envíe un pull request con comandos ejecutables y salidas.
-4. Mantenga los cambios acotados a un flujo de trabajo cuando sea posible.
+4. Mantenga los cambios acotados a un único flujo de trabajo cuando sea posible.
 
 ## 📄 Licencia
 
-Actualmente no hay un archivo `LICENSE` en la raíz del repositorio en esta instantánea. Agregue uno para definir términos de uso y redistribución.
+Actualmente no hay un archivo `LICENSE` presente en la raíz del repositorio en esta instantánea. Añada uno para definir los términos de uso y redistribución.
 
 ## 📚 Citación
 
@@ -431,4 +444,10 @@ Si utiliza este repositorio o se basa en este trabajo, cite:
   journal={arXiv preprint arXiv:2510.21924},
   year={2025}
 }
-```
+
+
+## ❤️ Support
+
+| Donate | PayPal | Stripe |
+| --- | --- | --- |
+| [![Donate](https://camo.githubusercontent.com/24a4914f0b42c6f435f9e101621f1e52535b02c225764b2f6cc99416926004b7/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f446f6e6174652d4c617a79696e674172742d3045413545393f7374796c653d666f722d7468652d6261646765266c6f676f3d6b6f2d6669266c6f676f436f6c6f723d7768697465)](https://chat.lazying.art/donate) | [![PayPal](https://camo.githubusercontent.com/d0f57e8b016517a4b06961b24d0ca87d62fdba16e18bbdb6aba28e978dc0ea21/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f50617950616c2d526f6e677a686f754368656e2d3030343537433f7374796c653d666f722d7468652d6261646765266c6f676f3d70617970616c266c6f676f436f6c6f723d7768697465)](https://paypal.me/RongzhouChen) | [![Stripe](https://camo.githubusercontent.com/1152dfe04b6943afe3a8d2953676749603fb9f95e24088c92c97a01a897b4942/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5374726970652d446f6e6174652d3633354246463f7374796c653d666f722d7468652d6261646765266c6f676f3d737472697065266c6f676f436f6c6f723d7768697465)](https://buy.stripe.com/aFadR8gIaflgfQV6T4fw400) |

@@ -1,7 +1,9 @@
 [English](../README.md) · [العربية](README.ar.md) · [Español](README.es.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Tiếng Việt](README.vi.md) · [中文 (简体)](README.zh-Hans.md) · [中文（繁體）](README.zh-Hant.md) · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
 
-# 스펙트럴 이미징을 위한 메타표면 역설계
+[![LazyingArt banner](https://github.com/lachlanchen/lachlanchen/raw/main/figs/banner.png)](https://github.com/lachlanchen/lachlanchen/blob/main/figs/banner.png)
+
+# 분광 이미징을 위한 메타표면 역설계
 
 <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b?style=for-the-badge">
@@ -12,73 +14,83 @@
   <img alt="ArXiv" src="https://img.shields.io/badge/arXiv-2510.21924-b31b1b?style=for-the-badge&logo=arxiv&logoColor=white">
 </p>
 
-스펙트럴 이미징에서 메타표면 역설계를 수행하기 위한 스크립트 중심 연구 저장소입니다(과거 명칭: `inverse_metasurface`).
+분광 이미징용 메타표면 역설계를 위한 `inverse_metasurface`(과거 명칭) 스크립트 기반 연구 저장소입니다.
 
-핵심 워크플로는 다음을 결합합니다.
+핵심 워크플로우는 다음으로 구성됩니다.
 - 물리 기반 RCWA 시뮬레이션 (`S4` + Lua)
-- 데이터 병합 및 형상(shape) 정보 결합
-- 3단계 PyTorch 학습 (`shape -> spectrum`, `spectrum -> shape`, 체인 파인튜닝)
-- 정량/정성 평가 및 선택적 neural-vs-S4 일관성 검증
+- 데이터 통합 및 도형 첨부
+- 3단계 PyTorch 학습 (`shape -> spectrum`, `spectrum -> shape`, 연결된 파인 튜닝)
+- 정량·정성 평가, 필요 시 신경망-대-S4 일관성 검증
 
 > [!IMPORTANT]
-> 프로젝트의 기존 스크립트/문서에 정의된 표준 동작과 명령을 유지합니다. 과거 문서가 현재 없는 파일을 참조하는 경우에도, 호환성을 위해 해당 참조를 명시적 주석과 함께 의도적으로 보존합니다.
+> 기존 프로젝트 스크립트/문서에 보존된 동작과 명령을 유지합니다. 역사적 참조가 현재 스냅샷에서 누락된 파일을 가리키는 경우, 호환성 유지를 위해 해당 참조와 주석을 그대로 둡니다.
 
 ## 📑 목차
 
-- [✨ 한눈에 보기](#-한눈에-보기)
-- [🌍 국제화 (i18n)](#-국제화-i18n)
-- [✨ 기능](#-기능)
-- [🧭 엔드투엔드 워크플로](#-엔드투엔드-워크플로)
-- [🧱 프로젝트 구조](#-프로젝트-구조)
-- [🛠️ 사전 요구사항](#️-사전-요구사항)
-- [🚀 설치](#-설치)
-- [▶️ 사용법](#️-사용법)
-- [⚙️ 설정](#️-설정)
-- [🧪 예제](#-예제)
-- [🔬 연구 맥락](#-연구-맥락)
-- [🧑‍💻 개발 노트](#-개발-노트)
-- [🧯 문제 해결](#-문제-해결)
-- [🗺️ 로드맵](#️-로드맵)
-- [🤝 기여](#-기여)
-- [📄 라이선스](#-라이선스)
-- [📚 인용](#-인용)
+- [🌟 Snapshot](#-snapshot)
+- [✨ 한눈에 보기](#-at-a-glance)
+- [🌍 국제화 (i18n)](#-internationalization-i18n)
+- [✨ 기능](#-features)
+- [🧭 엔드투엔드 워크플로우](#-end-to-end-workflow)
+- [🧱 프로젝트 구조](#-project-structure)
+- [🛠️ 선행 조건](#️-prerequisites)
+- [🚀 설치](#-installation)
+- [▶️ 사용법](#️-usage)
+- [⚙️ 설정](#️-configuration)
+- [🧪 예제](#-examples)
+- [🔬 연구 배경](#-research-context)
+- [🧑‍💻 개발 노트](#-development-notes)
+- [🧯 문제 해결](#-troubleshooting)
+- [🗺️ 로드맵](#️-roadmap)
+- [🤝 기여](#-contribution)
+- [📄 라이선스](#-license)
+- [📚 인용](#-citation)
+
+## 🌟 Snapshot
+
+| 항목 | 상태 |
+|---|---|
+| 🧠 목표 | 전이 스펙트럼 데이터로부터 C4 대칭 메타표면 기하구조를 역으로 재구성 |
+| 🔧 핵심 스택 | S4 RCWA (`Lua`) + PyTorch 학습 + 선택적 기하 -> 스펙트럼 재검증 |
+| 🧪 데이터 파이프라인 | CSV 병합/도형 정점 첨부 → NPZ (`uids`, `spectra`, `shapes`) |
+| 🚀 준비 상태 | 연구 프로토타입; 스크립트와 문서는 역사적 참조와의 호환성 유지 |
 
 ## ✨ 한눈에 보기
 
-| 항목 | 내용 |
+| 항목 | 세부 내용 |
 |---|---|
-| 🎯 주요 과제 | 목표 투과율 스펙트럼으로부터 C4 대칭 메타표면 기하 형상 추론 |
-| 🔬 시뮬레이터 | 셸 런처와 `.lua` 스크립트에서 호출하는 `../build/S4` |
+| 🎯 주요 작업 | 목표 전송율 스펙트럼으로부터 C4 대칭 메타표면 기하구조 추론 |
+| 🔬 시뮬레이터 | 쉘 런처와 `.lua` 스크립트로 호출되는 `../build/S4` |
 | 🧠 학습 파이프라인 | Stage A `shape -> spectra`, Stage B `spectra -> shape`, Stage C `spectra -> shape -> spectra` |
-| 📦 데이터 규약 | 병합 CSV (`T@...`, 메타데이터, `vertices_str`) -> 압축 NPZ (`uids`, `spectra`, `shapes`) |
-| 🧪 평가 | MSE 지표, 단계별 시각화, 선택적 신규 S4 재시뮬레이션 |
-| 🌐 i18n 상태 | 루트 레벨 다국어 README 파일 + 기존 `i18n/` 디렉터리 |
+| 📦 데이터 규약 | 병합 CSV (`T@...`, 메타데이터, `vertices_str`) → 압축 NPZ (`uids`, `spectra`, `shapes`) |
+| 🧪 평가 | MSE 지표, 단계별 시각화, 선택적 S4 재시뮬레이션 |
+| 🌐 i18n 상태 | 루트 수준 다국어 README 파일 + 기존 `i18n/` 디렉터리 |
 
 ## 🌍 국제화 (i18n)
 
-- 다국어 README는 저장소 루트의 `README.<lang>.md` 파일로 관리됩니다.
-- 이 저장소 스냅샷에는 `i18n/` 디렉터리가 존재합니다.
-- 이 파일은 상단에 단일 언어 옵션 라인만 유지하여 언어 바 중복을 방지합니다.
-- `README.en.md`도 저장소에 존재하지만, 이번 업데이트 기준 표준 베이스는 `README.md`입니다.
+- 다국어 README는 저장소 루트에 `README.<lang>.md` 형태로 관리됩니다.
+- 이 저장소 스냅샷에 `i18n/` 디렉터리가 존재합니다.
+- 이 파일은 언어 링크가 중복되지 않도록 최상단에 단일 언어 바를 배치합니다.
+- `README.en.md`도 존재합니다. 이번 갱신에서는 `README.md`를 기준 원문으로 사용합니다.
 
 ## ✨ 기능
 
-- S4 시뮬레이션 출력부터 학습된 역모델까지 이어지는 엔드투엔드 역설계 경로.
-- C4 대칭 다각형 파라미터화 및 Q1 포인트 인코딩 (`4x3`: `presence, x, y`).
-- 단일 스크립트(`three_stage_transmittance.py`)에서 수행되는 3단계 모델 학습.
-- 스펙트럼 정밀도를 유지하면서 형상별 정점 정보를 결합하는 병합 도구.
-- 학습 예측 결과를 새로운 S4 시뮬레이션과 비교하는 선택적 평가기.
-- 폭넓은 탐색 브랜치(AVIRIS, SWIR/noise, GSST, archived/deprecated 변형).
+- S4 시뮬레이션 결과부터 역모델 학습까지 연결되는 엔드투엔드 역설계 경로.
+- C4 대칭 다각형 매개변수화 및 Q1 포인트 인코딩 (`4x3`: `presence, x, y`).
+- 하나의 스크립트에서 3단계 모델 학습 수행 (`three_stage_transmittance.py`).
+- 스펙트럼 정밀도를 보존하고 샘플별 정점(`vertices`)을 붙이는 병합 도구.
+- 학습 예측값을 새로운 S4 시뮬레이션과 비교하는 선택적 평가기.
+- AVIRIS, SWIR/노이즈, GSST, archived/deprecated 분기를 포함한 폭넓은 탐색 브랜치.
 
-## 🧭 엔드투엔드 워크플로
+## 🧭 엔드투엔드 워크플로우
 
-1. `results/`에 시뮬레이션 출력, `shapes/`에 다각형 파일 생성
-2. S4 CSV 파일 병합 및 형상 정점 정보 결합
-3. 학습 호환성을 위해 병합 컬럼명 정규화
-4. 병합 CSV를 NPZ 텐서로 전처리
-5. Stage A/B/C 모델 학습
-6. 체크포인트 평가 및 동작 시각화
-7. 선택적으로 예측 형상 스펙트럼과 신규 S4 실행 결과 비교
+1. `results/`에 시뮬레이션 출력 파일을 생성하고 `shapes/`에 폴리곤 파일을 생성합니다.
+2. S4 CSV 파일을 병합하고 도형 정점을 첨부합니다.
+3. 학습 호환을 위해 열 이름을 정규화합니다.
+4. 병합된 CSV 파일을 NPZ 텐서로 전처리합니다.
+5. Stage A/B/C 모델을 학습합니다.
+6. 체크포인트를 평가하고 동작을 시각화합니다.
+7. 필요 시 예측한 도형 스펙트럼을 새로 실행한 S4 결과와 비교합니다.
 
 ## 🧱 프로젝트 구조
 
@@ -129,21 +141,22 @@
 └── deprecated_code/
 ```
 
-## 🛠️ 사전 요구사항
+## 🛠️ 선행 조건
 
 | 의존성 | 비고 |
 |---|---|
-| Linux + Bash | 런처 스크립트는 셸 실행을 대상으로 함 |
-| Python 3.9 | `iccp.yaml` (`python=3.9.18`)과 일치 |
-| Conda | 재현성을 위해 권장 |
-| S4 binary | `../build/S4` 경로에 있어야 함 |
-| CUDA GPU (선택) | 학습/평가 속도 향상 |
+| Linux + Bash | 런처 스크립트는 쉘 실행을 전제로 함 |
+| Python 3.9 | `iccp.yaml`(`python=3.9.18`)과 일치 |
+| Conda | 재현성 확보를 위해 권장 |
+| S4 바이너리 | `../build/S4` 경로에 존재해야 함 |
+| CUDA GPU (선택) | 학습/평가 속도 개선 |
 
 ## 🚀 설치
 
-### 1) 클론 및 진입
+### 1) 클론 후 진입
 
 ```bash
+
 git clone <your-repo-url> inverse_metasurface
 cd inverse_metasurface
 ```
@@ -155,14 +168,14 @@ conda env create -f iccp.yaml
 conda activate iccp
 ```
 
-대체 참고:
+대체 노트:
 
 ```bash
 # Historical README reference (file may be absent in this snapshot)
 pip install -r pip_requirements.txt
 ```
 
-### 3) 스크립트가 기대하는 시뮬레이터 경로 확인
+### 3) 스크립트에서 기대하는 시뮬레이터 경로 확인
 
 ```bash
 ls -l ../build/S4
@@ -178,13 +191,13 @@ chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_st
 
 ### A) RCWA 시뮬레이션 데이터 생성
 
-간단 실행:
+단순 런처:
 
 ```bash
 ./ms.sh -ns 10000 -r 12345
 ```
 
-파라미터 실행:
+매개변수 지정 런처:
 
 ```bash
 ./ms_final.sh \
@@ -196,7 +209,7 @@ chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_st
   -ro 0.30
 ```
 
-재개 중심 실행:
+재개 전용 런처:
 
 ```bash
 ./ms_resume_allargs.sh \
@@ -208,7 +221,7 @@ chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_st
   -ro 0.30
 ```
 
-추가 재개/랜덤 상태 예시(명령 문서 기준):
+추가 resume/랜덤 상태 예시 (명령문서에서 발췌):
 
 ```bash
 ./ms_resume_random_state.sh \
@@ -224,16 +237,16 @@ chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_st
 - 런처는 `NQ=1..4`를 병렬 실행합니다.
 - 스크립트는 `-t 32` 옵션으로 `../build/S4`를 호출합니다.
 
-### B) S4 출력 병합 및 형상 정점 정보 결합
+### B) S4 출력 병합 및 도형 정점 첨부
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
 # output: merged_s4_shapes_myrun.csv
 ```
 
-### C) 학습 호환성을 위한 컬럼 정규화
+### C) 학습 호환을 위한 열 이름 정규화
 
-`merge_s4_data_full.py`는 `folder_key`와 `NQ`를 기록하지만, 학습 경로는 `prefix`와 `nQ`를 기대합니다.
+`merge_s4_data_full.py`는 `folder_key`와 `NQ`를 출력하지만, 학습 경로는 `prefix`와 `nQ`를 기대합니다.
 
 ```bash
 python -c "import pandas as pd; p='merged_s4_shapes_myrun.csv'; df=pd.read_csv(p); df=df.rename(columns={'folder_key':'prefix','NQ':'nQ'}); df.to_csv(p,index=False)"
@@ -260,14 +273,14 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-출력 경로:
+출력은 다음에 기록됩니다:
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
 
-### F) 학습 모델 평가
+### F) 학습된 모델 평가
 
-과거 README 명령(기존 문서 호환을 위해 스크립트 이름 유지):
+이력 README 명령 (호환성을 위해 스크립트 이름은 그대로 유지):
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -276,9 +289,10 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-저장소 상태 참고: 이 스냅샷에는 `three_stage_transmittance_evaluation.py`가 없습니다. 현재 사용 가능한 평가 기능은 `FilterShapeS4_Evaluator_Transmittance.py`를 사용하세요.
+저장소 상태 메모:
+`three_stage_transmittance_evaluation.py`는 현재 스냅샷에 존재하지 않습니다. 사용 가능한 평가 기능은 `FilterShapeS4_Evaluator_Transmittance.py`를 사용하세요.
 
-### G) 선택적 neural-vs-S4 일관성 점검
+### G) 선택적 신경망-vs-S4 일관성 검증
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -294,39 +308,39 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 
 | Flag | 의미 | 기본값 |
 |---|---|---|
-| `-ns`, `--numshapes` | 생성할 형상 수 | `100000` |
-| `-r`, `--seed` | 랜덤 시드 | `88888` |
-| `-p`, `--prefix` | prefix/resume 키 | `""` |
-| `-g`, `--numg` | basis/grid 파라미터 | `80` |
+| `-ns`, `--numshapes` | 생성할 도형 수 | `100000` |
+| `-r`, `--seed` | 난수 시드 | `88888` |
+| `-p`, `--prefix` | 접두사/재개 키 | `""` |
+| `-g`, `--numg` | 기저/그리드 파라미터 | `80` |
 | `-bo`, `--baseouter` | 기본 외곽 경계 오프셋 | `0.25` |
-| `-ro`, `--randouter` | 랜덤 외곽 경계 오프셋 | `0.20` |
+| `-ro`, `--randouter` | 무작위 외곽 경계 오프셋 | `0.20` |
 
 ### 학습 (`three_stage_transmittance.py`)
 
 | Flag | 의미 | 기본값 |
 |---|---|---|
 | `--preprocess` | 전처리 모드 실행 | `False` |
-| `--input_folder` | 병합 CSV 폴더 경로 | `""` |
+| `--input_folder` | 병합 CSV가 포함된 폴더 | `""` |
 | `--output_npz` | 출력 NPZ 경로 | `preprocessed_data.npz` |
 | `--data_npz` | 학습용 NPZ 데이터셋 | `""` |
-| `--csv_file` | NPZ 미사용 시 CSV 대체 입력 | `""` |
+| `--csv_file` | NPZ 미사용 시 대체 CSV | `""` |
 | `--test` | 테스트 모드 | `False` |
-| `--num_epochs` | 학습 epoch 수 | `10` |
+| `--num_epochs` | 에포크 수 | `10` |
 | `--batch_size` | 배치 크기 | `4096` |
 
 ### 과거 평가 설정 (`three_stage_transmittance_evaluation.py`)
 
 | Flag | 의미 | 기본값 |
 |---|---|---|
-| `--model_dir` | `stageA/B/C`가 있는 디렉터리 | 필수 |
+| `--model_dir` | `stageA/B/C`를 포함한 디렉터리 | required |
 | `--data_npz` | NPZ 입력 | `""` |
-| `--csv_file` | CSV 대체 입력 | `""` |
-| `--output_dir` | 출력 디렉터리 덮어쓰기 | `model_dir` 하위 자동 생성 |
+| `--csv_file` | CSV 입력 대체 | `""` |
+| `--output_dir` | 출력 디렉터리 재설정 | `model_dir` 하위 자동 |
 | `--sample_count` | 시각화 샘플 수 | `4` |
-| `--seed` | 랜덤 시드 | `23` |
-| `--font_scale` | 플롯 폰트 배율 | `1.0` |
+| `--seed` | 난수 시드 | `23` |
+| `--font_scale` | 플롯 글꼴 배율 | `1.0` |
 | `--batch_size` | 평가 배치 크기 | `32` |
-| `--plot_only` | 학습 곡선만 플로팅 | `False` |
+| `--plot_only` | 학습 곡선만 그리기 | `False` |
 
 ### S4 일관성 평가기 (`FilterShapeS4_Evaluator_Transmittance.py`)
 
@@ -336,13 +350,13 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--spec2shape_ckpt` | Stage C 체크포인트 경로 | `outputs_three_stage_20250322_145925/stageC/spec2shape_stageC.pt` |
 | `--shape2spec_ckpt` | Stage A 체크포인트 경로 | `outputs_three_stage_20250322_145925/stageA/shape2spec_stageA.pt` |
 | `--n_samples` | 평가 샘플 수 | `4` |
-| `--seed` | 랜덤 시드 | `23` |
-| `--max_workers` | S4 워커 스레드 수 | `4` |
-| `--out_folder` | 출력 디렉터리 | 타임스탬프 기반 자동 생성 |
+| `--seed` | 난수 시드 | `23` |
+| `--max_workers` | S4 작업자 스레드 | `4` |
+| `--out_folder` | 출력 디렉터리 | 타임스탬프 자동 |
 
 ## 🧪 예제
 
-### 스모크 런
+### 스모크 실행
 
 ```bash
 ./ms_final.sh -ns 1000 -r 42 -p smoke -g 40 -bo 0.25 -ro 0.20
@@ -353,7 +367,7 @@ python three_stage_transmittance.py --preprocess --input_folder merged_csvs --ou
 python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_size 128
 ```
 
-### 실행 프로필 예시 (`commands.md` / `commands_updated.md` 기준)
+### 실행 프로필 예시 (`commands.md` / `commands_updated.md`에서)
 
 ```bash
 # no overlap, G=40
@@ -366,44 +380,44 @@ python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_
 ./ms_resume_allargs.sh -ns 100000 -r 12345 -p more_basis_overlap -g 80 -bo 0.35 -ro 0.3
 ```
 
-## 🔬 연구 맥락
+## 🔬 연구 컨텍스트
 
-현재 역설계 설정은 결정화 상태 전반의 투과율로부터 C4 대칭 기하 형상을 복원하도록 학습됩니다. 현재 투과율 파이프라인은 다음을 가정합니다.
+현재의 역설계 설정은 결정화 상태별 전송율을 통해 C4 대칭 기하를 복원하는 학습을 수행합니다. 현재 전송율 파이프라인은 다음을 가정합니다:
 
-- 형상 샘플당 11개 결정화 행(고유 `shape_uid` 기준 그룹화)
-- 결정화 상태당 100개 파장 bin (`T@...` 컬럼)
-- 최대 4개의 Q1 제어점을 `4x3` 텐서 `(presence, x, y)`로 인코딩
-- 형상 시각화 및 일관성 점검을 위한 C4 대칭 기반 다각형 재구성
+- 형상 샘플당 11개의 결정화 행 (`shape_uid` 기준으로 그룹화)
+- 각 결정화 상태당 100개 파장 구간의 스펙트럼 열 (`T@...` 컬럼)
+- 최대 4개 Q1 제어점을 `4x3` 텐서로 인코딩: (`presence, x, y`)
+- 도형 시각화 및 일관성 검사를 위한 C4 대칭 다각형 재구성
 
-저장소에는 주요 투과율 학습 경로 외에도 `AVIRIS*`, `noise_experiment*`, `archived/` 등 탐색 브랜치가 포함되어 있습니다.
+저장소에는 주요 전송율 학습 경로 외에도 탐색 브랜치(`AVIRIS*`, `noise_experiment*`, `archived/`)가 존재합니다.
 
 ## 🧑‍💻 개발 노트
 
-- 이 저장소는 패키지형 Python 모듈보다 스크립트 중심 연구 저장소에 가깝습니다.
+- 본 저장소는 패키지형 Python 모듈이 아니라 스크립트 중심의 연구 저장소입니다.
 - 핵심 스크립트는 상대 경로(특히 `../build/S4`, `results/`, `shapes/`)를 가정합니다.
-- `.gitignore`는 다수의 생성 실험 산출물(`*.csv`, `*.npz`, `*.pt`, 실행 폴더)을 제외합니다.
-- 과거 문서에서 언급되지만 현재 스냅샷에 없는 파일/디렉터리 참조는 호환성을 위해 주석과 함께 의도적으로 유지됩니다.
-- macOS 사이드카 파일(`._*`)이 포함되어 있을 수 있으며, 기능과 무관한 메타데이터 아티팩트일 수 있습니다.
+- `.gitignore`는 많은 생성된 실험 산출물(`*.csv`, `*.npz`, `*.pt`, 실행 폴더)을 제외합니다.
+- 역사 문서에 언급된 일부 파일/디렉터리는 현재 스냅샷에 없습니다. 호환성을 위해 이 참고 항목은 주석과 함께 유지됩니다.
+- macOS 사이드카 파일(`._*`)이 존재할 수 있으며, 작동하지 않는 메타데이터 산물일 수 있습니다.
 
 ## 🧯 문제 해결
 
-| 증상 | 가능한 원인 | 해결 방법 |
+| 증상 | 가능성 있는 원인 | 해결 |
 |---|---|---|
-| `../build/S4: No such file or directory` | 기대 상대 경로에 S4 binary가 없음 | `../build/S4`에 S4를 빌드/링크하거나 런처 경로 수정 |
-| `No transmission columns found` | CSV에 `T@...` 컬럼이 없음 | 병합 출력 형식을 다시 확인 |
-| `Must specify either --data_npz or --csv_file` | 학습/평가 데이터 인자 누락 | 입력 하나를 명시적으로 제공 |
-| `No valid shapes => SHIFT->Q1->UpTo4` | `vertices_str`가 비어 있거나 유효하지 않음, 또는 Q1 필터링으로 전 샘플 제거 | shape 파일과 병합 출력 검증 |
-| `--prefix` 기준 병합 출력이 비어 있음 | prefix가 `results/` 파일과 일치하지 않음 | 정확한 파일명 prefix 확인 후 재실행 |
-| 평가 체크포인트 누락 | `stageA/B/C` 체크포인트 파일이 없음 | `--model_dir`가 완전한 출력 폴더를 가리키는지 확인 |
-| `three_stage_transmittance_evaluation.py` not found | 과거 문서에 언급되지만 현재 없음 | `FilterShapeS4_Evaluator_Transmittance.py` 사용 또는 이전 커밋에서 해당 스크립트 복원 |
+| `../build/S4: No such file or directory` | 스크립트에서 기대하는 상대 경로에 S4 바이너리가 없음 | `../build/S4`에서 S4를 빌드/링크하거나 런처 경로를 수정 |
+| `No transmission columns found` | CSV에 `T@...` 열이 없음 | 병합 출력 형식 재확인 |
+| `Must specify either --data_npz or --csv_file` | 학습/평가 데이터 인자가 누락됨 | 데이터 인자를 하나 명시적으로 지정 |
+| `No valid shapes => SHIFT->Q1->UpTo4` | `vertices_str`이 유효하지 않거나 비어있고 Q1 필터로 모든 샘플이 제거됨 | 도형 파일 및 병합 결과를 검증 |
+| `Empty merge output for --prefix` | `--prefix`와 일치하는 `results/` 파일이 없음 | 접두어를 정확히 확인하고 병합 재실행 |
+| Evaluation checkpoint missing | `stageA/B/C` 체크포인트 누락 | `--model_dir`이 완전한 출력 폴더를 가리키는지 확인 |
+| `three_stage_transmittance_evaluation.py` not found | 과거 문서에서 참조되나 현재 존재하지 않음 | `FilterShapeS4_Evaluator_Transmittance.py`를 사용하거나 이전 커밋에서 복원 |
 
 ## 🗺️ 로드맵
 
-- 명시적 데이터 버전 관리 매니페스트와 고정 실행 설정을 통해 재현성 향상
-- 투과율, AVIRIS, noise 브랜치의 표준 진입점 정리
-- 전처리 및 소규모 1 epoch 학습에 대한 자동 스모크 테스트 추가
-- 출력 폴더와 정확한 명령줄을 연결하는 실험 레지스트리 개선
-- 다국어 README 동기화 워크플로(루트 언어 파일 + `i18n/`) 확장
+- 명시적 데이터 버전 매니페스트와 고정된 실행 구성을 통해 재현성을 향상.
+- transmittance, AVIRIS, noise 브랜치의 정식 진입점을 정비.
+- 전처리와 1 에포크 미니 학습용 자동 스모크 테스트 추가.
+- 출력 폴더와 정확한 실행 명령을 연결하는 실험 레지스트리 가시성 강화.
+- 다국어 README 동기화 파이프라인 확장(루트 README 및 `i18n/`).
 
 ## 🤝 기여
 
@@ -411,18 +425,18 @@ python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_
 
 권장 절차:
 
-1. 범위와 기대 동작을 담은 이슈를 먼저 등록합니다.
-2. 목적이 명확한 브랜치를 생성합니다.
-3. 실행 가능한 명령과 결과를 포함해 Pull Request를 제출합니다.
-4. 가능하면 하나의 워크플로 범위로 변경사항을 제한합니다.
+1. 이슈에서 범위와 기대 동작 공유
+2. 목적이 뚜렷한 브랜치 생성
+3. 실행 가능한 명령과 출력 결과를 포함한 PR 제출
+4. 가능한 경우 작업 흐름을 하나로 제한
 
 ## 📄 라이선스
 
-현재 스냅샷의 저장소 루트에는 `LICENSE` 파일이 없습니다. 사용 및 재배포 조건을 정의하려면 라이선스 파일을 추가하세요.
+현재 스냅샷의 저장소 루트에는 `LICENSE` 파일이 없습니다. 사용 조건과 재배포 규정을 정의하려면 추가하세요.
 
 ## 📚 인용
 
-이 저장소를 사용하거나 본 연구를 바탕으로 작업하는 경우, 다음을 인용해 주세요.
+이 저장소를 사용하거나 이 작업을 기반으로 확장하는 경우, 다음을 인용해 주세요.
 
 ```bibtex
 @article{chen2025inverse,
@@ -432,3 +446,10 @@ python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_
   year={2025}
 }
 ```
+
+
+## ❤️ Support
+
+| Donate | PayPal | Stripe |
+| --- | --- | --- |
+| [![Donate](https://camo.githubusercontent.com/24a4914f0b42c6f435f9e101621f1e52535b02c225764b2f6cc99416926004b7/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f446f6e6174652d4c617a79696e674172742d3045413545393f7374796c653d666f722d7468652d6261646765266c6f676f3d6b6f2d6669266c6f676f436f6c6f723d7768697465)](https://chat.lazying.art/donate) | [![PayPal](https://camo.githubusercontent.com/d0f57e8b016517a4b06961b24d0ca87d62fdba16e18bbdb6aba28e978dc0ea21/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f50617950616c2d526f6e677a686f754368656e2d3030343537433f7374796c653d666f722d7468652d6261646765266c6f676f3d70617970616c266c6f676f436f6c6f723d7768697465)](https://paypal.me/RongzhouChen) | [![Stripe](https://camo.githubusercontent.com/1152dfe04b6943afe3a8d2953676749603fb9f95e24088c92c97a01a897b4942/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5374726970652d446f6e6174652d3633354246463f7374796c653d666f722d7468652d6261646765266c6f676f3d737472697065266c6f676f436f6c6f723d7768697465)](https://buy.stripe.com/aFadR8gIaflgfQV6T4fw400) |

@@ -1,7 +1,9 @@
 [English](../README.md) · [العربية](README.ar.md) · [Español](README.es.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Tiếng Việt](README.vi.md) · [中文 (简体)](README.zh-Hans.md) · [中文（繁體）](README.zh-Hant.md) · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
 
-# Inverses Design von Metaflächen für spektrale Bildgebung
+[![LazyingArt banner](https://github.com/lachlanchen/lachlanchen/raw/main/figs/banner.png)](https://github.com/lachlanchen/lachlanchen/blob/main/figs/banner.png)
+
+# Inverses Design von Metasurfaces für spektrale Bildgebung
 
 <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Prototype-f59e0b?style=for-the-badge">
@@ -12,19 +14,20 @@
   <img alt="ArXiv" src="https://img.shields.io/badge/arXiv-2510.21924-b31b1b?style=for-the-badge&logo=arxiv&logoColor=white">
 </p>
 
-Ein script-zentriertes Forschungs-Repository (historisch als `inverse_metasurface` bezeichnet) für das inverse Design von Metaflächen in der spektralen Bildgebung.
+Ein skriptbasiertes Forschungs-Repository (historisch als `inverse_metasurface` bezeichnet) für inverses Design von Metasurfaces in der spektralen Bildgebung.
 
 Der Kern-Workflow kombiniert:
-- physikbasierte RCWA-Simulation (`S4` + Lua)
-- Datenzusammenführung und Anreicherung mit Forminformationen
-- dreistufiges Lernen mit PyTorch (`shape -> spectrum`, `spectrum -> shape`, verkettetes Fine-Tuning)
-- quantitative und qualitative Auswertung, optional mit Konsistenzprüfung neuronales Modell vs. S4
+- Physik-basierte RCWA-Simulation (`S4` + Lua)
+- Datenzusammenführung und Formanreicherung
+- Drei-stufiges PyTorch-Lernen (`shape -> spectrum`, `spectrum -> shape`, verkettetes Fine-Tuning)
+- Quantitative und qualitative Auswertung, optional mit Konsistenzprüfung neural vs. S4
 
 > [!IMPORTANT]
-> Kanonisches Verhalten und Befehle aus den bestehenden Projekt-Skripten/-Docs bleiben erhalten. Wo historische Verweise auf fehlende Dateien zeigen, bleiben diese Verweise aus Kompatibilitätsgründen bewusst mit expliziten Hinweisen bestehen.
+> Das kanonische Verhalten und die Befehle bleiben aus den bestehenden Projekt-Skripten/Docs erhalten. Wo historische Verweise auf nicht vorhandene Dateien zeigen, werden diese Verweise aus Kompatibilitätsgründen mit expliziten Hinweisen bewusst beibehalten.
 
-## 📑 Inhalt
+## 📑 Inhalte
 
+- [🌟 Snapshot](#-snapshot)
 - [✨ Auf einen Blick](#-auf-einen-blick)
 - [🌍 Internationalisierung (i18n)](#-internationalisierung-i18n)
 - [✨ Funktionen](#-funktionen)
@@ -32,53 +35,62 @@ Der Kern-Workflow kombiniert:
 - [🧱 Projektstruktur](#-projektstruktur)
 - [🛠️ Voraussetzungen](#️-voraussetzungen)
 - [🚀 Installation](#-installation)
-- [▶️ Verwendung](#️-verwendung)
+- [▶️ Nutzung](#️-nutzung)
 - [⚙️ Konfiguration](#️-konfiguration)
 - [🧪 Beispiele](#-beispiele)
 - [🔬 Forschungskontext](#-forschungskontext)
 - [🧑‍💻 Entwicklungshinweise](#-entwicklungshinweise)
 - [🧯 Fehlerbehebung](#-fehlerbehebung)
 - [🗺️ Roadmap](#️-roadmap)
-- [🤝 Mitwirken](#-mitwirken)
+- [🤝 Beitrag](#-beitrag)
 - [📄 Lizenz](#-lizenz)
-- [📚 Zitation](#-zitation)
+- [📚 Zitierung](#-zitierung)
+
+## 🌟 Snapshot
+
+| Fokus | Status |
+|---|---|
+| 🧠 Ziel | Inverse Rekonstruktion der C4-symmetrischen Metasurface-Geometrie aus Spektraldaten |
+| 🔧 Kern-Stack | S4 RCWA (`Lua`) + PyTorch-Training + optionale Geometrie-zu-Spektrum-Neubewertung |
+| 🧪 Datenpipeline | CSV-Merge/Form-Anreicherung → NPZ (`uids`, `spectra`, `shapes`) |
+| 🚀 Reifegrad | Forschungsprototyp; Skripte und Dokumentation bleiben kompatibel mit historischen Verweisen |
 
 ## ✨ Auf einen Blick
 
-| Element | Details |
+| Punkt | Details |
 |---|---|
-| 🎯 Hauptaufgabe | C4-symmetrische Metaflächen-Geometrie aus Ziel-Transmissionsspektren inferieren |
+| 🎯 Hauptaufgabe | Rekonstruktion der C4-symmetrischen Metasurface-Geometrie aus Ziel-Transmissionsspektren |
 | 🔬 Simulator | `../build/S4`, aufgerufen durch Shell-Launcher und `.lua`-Skripte |
 | 🧠 Lernpipeline | Stufe A `shape -> spectra`, Stufe B `spectra -> shape`, Stufe C `spectra -> shape -> spectra` |
-| 📦 Datenvertrag | Zusammengeführte CSV (`T@...`, Metadaten, `vertices_str`) -> komprimierte NPZ (`uids`, `spectra`, `shapes`) |
-| 🧪 Auswertung | MSE-Metriken, Stufen-Visualisierungen, optionale erneute S4-Simulation |
-| 🌐 i18n-Status | Mehrsprachige README-Dateien im Repo-Root + vorhandenes Verzeichnis `i18n/` |
+| 📦 Datenvertrag | Zusammengeführte CSV (`T@...`, Metadaten, `vertices_str`) → komprimierte NPZ (`uids`, `spectra`, `shapes`) |
+| 🧪 Bewertung | MSE-Metriken, Stufen-Visualisierungen, optionale frische S4-Neusimulation |
+| 🌐 i18n-Status | Mehrsprachige README-Dateien im Repo-Root + bestehendes `i18n/`-Verzeichnis |
 
 ## 🌍 Internationalisierung (i18n)
 
-- Mehrsprachige READMEs werden im Repository-Root als `README.<lang>.md` gepflegt.
+- Die mehrsprachigen READMEs werden auf Repository-Ebene als Dateien `README.<lang>.md` gepflegt.
 - Das Verzeichnis `i18n/` ist in diesem Repository-Snapshot vorhanden.
-- Diese Datei enthält oben genau eine Sprach-Navigationszeile, um doppelte Sprachleisten zu vermeiden.
-- `README.en.md` existiert ebenfalls im Repo; diese `README.md` bleibt für diesen Update-Durchlauf die kanonische Basis.
+- Diese Datei enthält nur eine Sprachoptionszeile am Anfang, um doppelte Sprachleisten zu vermeiden.
+- `README.en.md` ist ebenfalls im Repo vorhanden; diese `README.md` bleibt für diesen Aktualisierungslauf die kanonische Grundlage.
 
 ## ✨ Funktionen
 
-- End-to-End-Pfad für inverses Design von S4-Simulationsergebnissen bis zum trainierten inversen Modell.
-- C4-symmetrische Polygon-Parametrisierung und Q1-Punktkodierung (`4x3`: `presence, x, y`).
-- Dreistufiges Modelltraining in einem Skript (`three_stage_transmittance.py`).
-- Merge-Tooling, das Spektralpräzision erhält und pro Form die Eckpunkte anhängt.
-- Optionaler Evaluator, der gelernte Vorhersagen mit neuer S4-Simulation vergleicht.
-- Umfangreiche explorative Zweige (AVIRIS, SWIR/Rauschen, GSST, archivierte/veraltete Varianten).
+- End-to-End-Inversdesign-Pfad von den S4-Simulationsausgaben bis zum trainierten inversen Modell.
+- C4-symmetrische Polygon-Parametrisierung und Q1-Punktekodierung (`4x3`: `presence, x, y`).
+- Drei-stufiges Modelltraining in einem Skript (`three_stage_transmittance.py`).
+- Merge-Werkzeuge, die spektrale Präzision erhalten und Scheitelpunkte pro Form anhängen.
+- Optionaler Evaluator, der gelernten Vorhersagen mit neuer S4-Simulation vergleicht.
+- Umfangreiche Explorationszweige (AVIRIS, SWIR/Rauschen, GSST, archivierte/veraltete Varianten).
 
 ## 🧭 End-to-End-Workflow
 
-1. Simulationsergebnisse in `results/` und Polygon-Dateien in `shapes/` erzeugen.
-2. S4-CSV-Dateien zusammenführen und Form-Eckpunkte anhängen.
-3. Spaltennamen der Merge-Ausgabe für Trainingskompatibilität normalisieren.
-4. Zusammengeführte CSV-Dateien in NPZ-Tensoren vorverarbeiten.
-5. Modelle der Stufen A/B/C trainieren.
-6. Checkpoints auswerten und Verhalten visualisieren.
-7. Optional Spektren vorhergesagter Formen mit neuen S4-Läufen vergleichen.
+1. Generiere Simulationsausgaben in `results/` und Polygon-Dateien in `shapes/`.
+2. Führe S4-CSV-Dateien zusammen und hänge Form-Vertices an.
+3. Normalisiere zusammengeführte Spaltennamen für Training-Kompatibilität.
+4. Verarbeite zusammengeführte CSV-Dateien in NPZ-Tensoren vor.
+5. Trainiere Modelle der Stufen A/B/C.
+6. Bewerte Checkpoints und visualisiere das Verhalten.
+7. Vergleiche optional die Spektren von vorhergesagten Formen mit neuen S4-Läufen.
 
 ## 🧱 Projektstruktur
 
@@ -133,15 +145,15 @@ Der Kern-Workflow kombiniert:
 
 | Abhängigkeit | Hinweise |
 |---|---|
-| Linux + Bash | Launcher-Skripte sind auf Shell-Ausführung ausgelegt |
+| Linux + Bash | Starter-Skripte sind auf Shell-Ausführung ausgelegt |
 | Python 3.9 | Entspricht `iccp.yaml` (`python=3.9.18`) |
-| Conda | Für Reproduzierbarkeit empfohlen |
+| Conda | Empfohlen für Reproduzierbarkeit |
 | S4-Binary | Erwarteter Pfad: `../build/S4` |
-| CUDA-GPU (optional) | Beschleunigt Training/Auswertung |
+| CUDA-GPU (optional) | Beschleunigt Training und Auswertung |
 
 ## 🚀 Installation
 
-### 1) Klonen und wechseln
+### 1) Klonen und betreten
 
 ```bash
 git clone <your-repo-url> inverse_metasurface
@@ -162,7 +174,7 @@ Alternativer Hinweis:
 pip install -r pip_requirements.txt
 ```
 
-### 3) Von Skripten erwarteten Simulatorpfad prüfen
+### 3) Simulatorpfad prüfen, der von den Skripten erwartet wird
 
 ```bash
 ls -l ../build/S4
@@ -174,7 +186,7 @@ ls -l ../build/S4
 chmod +x ms.sh ms_final.sh ms_resume.sh ms_resume_allargs.sh ms_resume_random_state.sh ms_resume_random_state_nir.sh
 ```
 
-## ▶️ Verwendung
+## ▶️ Nutzung
 
 ### A) RCWA-Simulationsdaten erzeugen
 
@@ -196,7 +208,7 @@ Parametrisierter Launcher:
   -ro 0.30
 ```
 
-Launcher für Resume-Szenarien:
+Resume-orientierter Launcher:
 
 ```bash
 ./ms_resume_allargs.sh \
@@ -208,7 +220,7 @@ Launcher für Resume-Szenarien:
   -ro 0.30
 ```
 
-Zusätzliches Resume/Random-State-Beispiel (aus den Befehlsdokumenten):
+Zusätzliches Resume/Random-State-Beispiel (aus Befehlsdokumenten):
 
 ```bash
 ./ms_resume_random_state.sh \
@@ -224,7 +236,7 @@ Hinweise:
 - Launcher führen `NQ=1..4` parallel aus.
 - Skripte rufen `../build/S4` mit `-t 32` auf.
 
-### B) S4-Ausgaben mergen und Form-Eckpunkte anhängen
+### B) S4-Ausgaben zusammenführen und Form-Vertices anhängen
 
 ```bash
 python merge_s4_data_full.py --prefix myrun
@@ -251,7 +263,7 @@ python three_stage_transmittance.py \
   --output_npz preprocessed_t_data.npz
 ```
 
-### E) Stufen A/B/C trainieren
+### E) Stufe A/B/C trainieren
 
 ```bash
 python three_stage_transmittance.py \
@@ -260,14 +272,14 @@ python three_stage_transmittance.py \
   --batch_size 1024
 ```
 
-Die Ausgaben werden geschrieben nach:
+Ausgaben werden geschrieben nach:
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageA`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageB`
 - `outputs_three_stage_YYYYMMDD_HHMMSS/stageC`
 
 ### F) Trainierte Modelle auswerten
 
-Historischer README-Befehl (Skriptname zur Kompatibilität mit älteren Docs beibehalten):
+Historischer README-Befehl (Skriptname zur Kompatibilität mit früheren Docs beibehalten):
 
 ```bash
 python three_stage_transmittance_evaluation.py \
@@ -276,9 +288,9 @@ python three_stage_transmittance_evaluation.py \
   --sample_count 8
 ```
 
-Hinweis zum Repository-Status: `three_stage_transmittance_evaluation.py` ist in diesem Snapshot nicht vorhanden. Für verfügbare Auswertungsfunktionen `FilterShapeS4_Evaluator_Transmittance.py` verwenden.
+Hinweis zum Repository-Stand: `three_stage_transmittance_evaluation.py` ist in diesem Snapshot nicht vorhanden. Verwende `FilterShapeS4_Evaluator_Transmittance.py` für die vorhandene Auswertungsfunktionalität.
 
-### G) Optionaler Konsistenzcheck neuronales Modell vs. S4
+### G) Optionaler Neural-versus-S4-Konsistenzcheck
 
 ```bash
 python FilterShapeS4_Evaluator_Transmittance.py \
@@ -294,11 +306,11 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 
 | Flag | Bedeutung | Standard |
 |---|---|---|
-| `-ns`, `--numshapes` | Anzahl der zu erzeugenden Formen | `100000` |
+| `-ns`, `--numshapes` | Anzahl zu generierender Formen | `100000` |
 | `-r`, `--seed` | Zufalls-Seed | `88888` |
 | `-p`, `--prefix` | Präfix/Resume-Schlüssel | `""` |
-| `-g`, `--numg` | Basis-/Grid-Parameter | `80` |
-| `-bo`, `--baseouter` | Basis-Offset der äußeren Grenze | `0.25` |
+| `-g`, `--numg` | Basis-/Raster-Parameter | `80` |
+| `-bo`, `--baseouter` | Offset der äußeren Basisgrenze | `0.25` |
 | `-ro`, `--randouter` | Zufälliger Offset der äußeren Grenze | `0.20` |
 
 ### Training (`three_stage_transmittance.py`)
@@ -308,10 +320,10 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--preprocess` | Vorverarbeitungsmodus ausführen | `False` |
 | `--input_folder` | Ordner mit zusammengeführten CSV-Dateien | `""` |
 | `--output_npz` | Ausgabe-NPZ-Pfad | `preprocessed_data.npz` |
-| `--data_npz` | NPZ-Datensatz fürs Training | `""` |
-| `--csv_file` | CSV-Fallback, wenn NPZ nicht genutzt wird | `""` |
+| `--data_npz` | NPZ-Datensatz für Training | `""` |
+| `--csv_file` | CSV-Fallback, falls NPZ nicht genutzt wird | `""` |
 | `--test` | Testmodus | `False` |
-| `--num_epochs` | Anzahl Trainings-Epochen | `10` |
+| `--num_epochs` | Anzahl der Epochen | `10` |
 | `--batch_size` | Batch-Größe | `4096` |
 
 ### Historische Auswertungskonfiguration (`three_stage_transmittance_evaluation.py`)
@@ -320,12 +332,12 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 |---|---|---|
 | `--model_dir` | Verzeichnis mit `stageA/B/C` | erforderlich |
 | `--data_npz` | NPZ-Eingabe | `""` |
-| `--csv_file` | CSV-Eingabe-Fallback | `""` |
+| `--csv_file` | CSV-Eingabefallback | `""` |
 | `--output_dir` | Ausgabeverzeichnis-Override | automatisch unter `model_dir` |
 | `--sample_count` | Anzahl visualisierter Samples | `4` |
 | `--seed` | Zufalls-Seed | `23` |
-| `--font_scale` | Schrift-Skalierung für Plots | `1.0` |
-| `--batch_size` | Batch-Größe für Auswertung | `32` |
+| `--font_scale` | Plot-Schriftgröße | `1.0` |
+| `--batch_size` | Evaluations-Batchgröße | `32` |
 | `--plot_only` | Nur Trainingskurven plotten | `False` |
 
 ### S4-Konsistenz-Evaluator (`FilterShapeS4_Evaluator_Transmittance.py`)
@@ -338,7 +350,7 @@ python FilterShapeS4_Evaluator_Transmittance.py \
 | `--n_samples` | Anzahl ausgewerteter Samples | `4` |
 | `--seed` | Zufalls-Seed | `23` |
 | `--max_workers` | S4-Worker-Threads | `4` |
-| `--out_folder` | Ausgabeverzeichnis | automatischer Zeitstempel |
+| `--out_folder` | Ausgabeordner | automatischer Zeitstempel |
 
 ## 🧪 Beispiele
 
@@ -368,61 +380,61 @@ python three_stage_transmittance.py --data_npz smoke.npz --num_epochs 5 --batch_
 
 ## 🔬 Forschungskontext
 
-Das aktuelle Setup für inverses Design lernt, C4-symmetrische Geometrie aus der Transmission über Kristallisationszustände hinweg zu rekonstruieren. Die Transmissions-Pipeline setzt derzeit voraus:
+Der aktuelle Inversdesign-Workflow lernt, C4-symmetrische Geometrie aus der Transmittanz über Kristallisationszustände hinweg zurückzuerhalten. Die Transmittanz-Pipeline geht derzeit von:
 
-- 11 Kristallisations-Zeilen pro Form-Sample (gruppiert nach eindeutiger `shape_uid`)
+- 11 Kristallisationszeilen pro Formsample (gruppiert nach eindeutiger `shape_uid`)
 - 100 Wellenlängen-Bins pro Kristallisationszustand (`T@...`-Spalten)
-- Bis zu 4 Q1-Kontrollpunkte codiert als `4x3`-Tensor: `(presence, x, y)`
+- Bis zu 4 Q1-Kontrollpunkten, kodiert als `4x3`-Tensor: `(presence, x, y)`
 - Polygon-Rekonstruktion unter C4-Symmetrie für Form-Visualisierung und Konsistenzprüfungen
 
-Das Repository enthält außerdem explorative Zweige (`AVIRIS*`, `noise_experiment*`, `archived/`) außerhalb des primären Transmissions-Trainingspfads.
+Das Repository enthält außerdem explorative Zweige (`AVIRIS*`, `noise_experiment*`, `archived/`) über den primären Transmitanz-Trainingspfad hinaus.
 
 ## 🧑‍💻 Entwicklungshinweise
 
-- Dieses Repository ist skriptzentrierte Forschung und kein paketiertes Python-Modul.
-- Kernskripte setzen relative Pfade voraus (insbesondere `../build/S4`, `results/`, `shapes/`).
-- `.gitignore` schließt viele erzeugte Experiment-Artefakte aus (`*.csv`, `*.npz`, `*.pt`, Run-Ordner).
-- Einige Dateien/Verzeichnisse aus historischen Docs fehlen aktuell in diesem Snapshot; diese Verweise werden zur Kompatibilität bewusst mit Hinweisen beibehalten.
-- macOS-Sidecar-Dateien (`._*`) sind vorhanden und können nicht-funktionale Metadaten-Artefakte sein.
+- Dies ist ein skriptzentriertes Forschungs-Repository statt eines gepackten Python-Moduls.
+- Kernskripte erwarten relative Pfade (insbesondere `../build/S4`, `results/`, `shapes/`).
+- `.gitignore` schließt viele generierte Experiment-Artefakte aus (`*.csv`, `*.npz`, `*.pt`, Run-Ordner).
+- Einige Dateien/Verzeichnisse in historischen Docs sind in diesem Snapshot derzeit nicht vorhanden; diese Verweise werden aus Kompatibilitätsgründen absichtlich mit Hinweisen beibehalten.
+- macOS-Sidecar-Dateien (`._*`) sind vorhanden und können Nicht-Funktions-Metadaten-Artefakte sein.
 
 ## 🧯 Fehlerbehebung
 
 | Symptom | Wahrscheinliche Ursache | Lösung |
 |---|---|---|
-| `../build/S4: No such file or directory` | S4-Binary fehlt am erwarteten relativen Pfad | S4 unter `../build/S4` bauen/verlinken oder Launcher-Pfade anpassen |
-| `No transmission columns found` | CSV ohne `T@...`-Spalten | Ausgabeformat des Merges prüfen |
-| `Must specify either --data_npz or --csv_file` | Fehlendes Datenargument für Training/Auswertung | Eine Eingabe explizit angeben |
-| `No valid shapes => SHIFT->Q1->UpTo4` | Ungültiges/leeres `vertices_str` oder Q1-Filter entfernt alle Samples | Form-Dateien und Merge-Ausgabe validieren |
+| `../build/S4: No such file or directory` | S4-Binary fehlt am erwarteten relativen Pfad | S4 unter `../build/S4` bauen/verlinken oder Launcher-Pfade aktualisieren |
+| `No transmission columns found` | CSV ohne `T@...`-Spalten | Merge-Ausgabeformat erneut prüfen |
+| `Must specify either --data_npz or --csv_file` | Fehlendes Trainings-/Evaluations-Datenargument | Explizit genau einen Eingabeparameter angeben |
+| `No valid shapes => SHIFT->Q1->UpTo4` | Ungültiges/leerers `vertices_str` oder Q1-Filter entfernt alle Samples | Form-Dateien und Merge-Ausgabe validieren |
 | Leere Merge-Ausgabe für `--prefix` | Präfix passt nicht zu Dateien in `results/` | Exaktes Dateipräfix prüfen und Merge erneut ausführen |
-| Evaluation-Checkpoint fehlt | Fehlende Checkpoint-Dateien für `stageA/B/C` | Prüfen, ob `--model_dir` auf vollständigen Output-Ordner zeigt |
-| `three_stage_transmittance_evaluation.py` nicht gefunden | In historischen Docs referenziertes Skript fehlt aktuell | `FilterShapeS4_Evaluator_Transmittance.py` verwenden oder Skript aus früheren Commits wiederherstellen |
+| Evaluations-Checkpoint fehlt | Fehlende `stageA/B/C`-Checkpoint-Dateien | Prüfen, dass `--model_dir` auf vollständigen Ausgabeordner zeigt |
+| `three_stage_transmittance_evaluation.py` nicht gefunden | Skript, auf das historische Docs verweisen, ist derzeit nicht vorhanden | `FilterShapeS4_Evaluator_Transmittance.py` verwenden oder dieses Skript aus früheren Commits wiederherstellen |
 
 ## 🗺️ Roadmap
 
-- Reproduzierbarkeit mit explizitem Data-Versioning-Manifest und fixierten Run-Konfigurationen verbessern.
-- Kanonische Entry-Points für Transmissions-, AVIRIS- und Rausch-Zweige konsolidieren.
-- Automatisierte Smoke-Tests für Vorverarbeitung und eine Mini-Trainingsepoche ergänzen.
-- Klareres Experiment-Register hinzufügen, das Ausgabeordner mit exakten Befehlszeilen verknüpft.
-- Workflow zur Synchronisierung mehrsprachiger READMEs erweitern (Root-Sprachdateien und `i18n/`).
+- Reproduzierbarkeit mit einem expliziten Datenversionierungs-Manifest und festen Run-Konfigurationen verbessern.
+- Kanonische Einstiegspunkte für Transmitanz-, AVIRIS- und Rausch-Zweige konsolidieren.
+- Automatisierte Smoke-Tests für Vorverarbeitung und eine Mini-Trainings-Epoche hinzufügen.
+- Klareres Experiment-Register ergänzen, das Ausgabeverzeichnisse mit exakten Befehlszeilen verknüpft.
+- Workflow zur Synchronisation mehrsprachiger READMEs erweitern (Root-Sprachdateien + `i18n/`).
 
-## 🤝 Mitwirken
+## 🤝 Beitrag
 
-Beiträge sind willkommen, besonders zu Reproduzierbarkeit, Tests und Dokumentationsqualität.
+Beiträge sind willkommen, besonders bei Reproduzierbarkeit, Tests und Dokumentationsqualität.
 
 Empfohlener Ablauf:
 
-1. Issue mit Umfang und erwartetem Verhalten eröffnen.
-2. Fokussierten Branch erstellen.
-3. Pull Request mit ausführbaren Befehlen und Outputs einreichen.
+1. Issue mit Umfang und erwartbarem Verhalten eröffnen.
+2. Einen fokussierten Branch erstellen.
+3. Einen Pull Request mit ausführbaren Befehlen und Outputs einreichen.
 4. Änderungen nach Möglichkeit auf einen Workflow begrenzen.
 
 ## 📄 Lizenz
 
-Im Repository-Root ist in diesem Snapshot derzeit keine `LICENSE`-Datei vorhanden. Ergänze eine, um Nutzungs- und Weitergabebedingungen festzulegen.
+Eine `LICENSE`-Datei ist in diesem Repository-Snapshot derzeit im Wurzelverzeichnis nicht vorhanden. Bitte ergänze eine Datei, um Nutzungs- und Weitergabe-Bedingungen festzulegen.
 
-## 📚 Zitation
+## 📚 Zitierung
 
-Wenn du dieses Repository verwendest oder auf dieser Arbeit aufbaust, zitiere bitte:
+Wenn du dieses Repository verwendest oder auf dieser Arbeit aufbaust, bitte zitieren:
 
 ```bibtex
 @article{chen2025inverse,
@@ -432,3 +444,10 @@ Wenn du dieses Repository verwendest oder auf dieser Arbeit aufbaust, zitiere bi
   year={2025}
 }
 ```
+
+
+## ❤️ Support
+
+| Donate | PayPal | Stripe |
+| --- | --- | --- |
+| [![Donate](https://camo.githubusercontent.com/24a4914f0b42c6f435f9e101621f1e52535b02c225764b2f6cc99416926004b7/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f446f6e6174652d4c617a79696e674172742d3045413545393f7374796c653d666f722d7468652d6261646765266c6f676f3d6b6f2d6669266c6f676f436f6c6f723d7768697465)](https://chat.lazying.art/donate) | [![PayPal](https://camo.githubusercontent.com/d0f57e8b016517a4b06961b24d0ca87d62fdba16e18bbdb6aba28e978dc0ea21/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f50617950616c2d526f6e677a686f754368656e2d3030343537433f7374796c653d666f722d7468652d6261646765266c6f676f3d70617970616c266c6f676f436f6c6f723d7768697465)](https://paypal.me/RongzhouChen) | [![Stripe](https://camo.githubusercontent.com/1152dfe04b6943afe3a8d2953676749603fb9f95e24088c92c97a01a897b4942/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5374726970652d446f6e6174652d3633354246463f7374796c653d666f722d7468652d6261646765266c6f676f3d737472697065266c6f676f436f6c6f723d7768697465)](https://buy.stripe.com/aFadR8gIaflgfQV6T4fw400) |
